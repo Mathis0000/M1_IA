@@ -44,13 +44,13 @@ typedef struct {
     char commentaire[256];
 } Evenement;
 
-typedef struct Node {
+typedef struct Nodes {
     Evenement evenement;
-    struct Node* next;
-} Node;
+    struct Nodes* next;
+} Nodes;
 
 typedef struct {
-    Node* head;
+    Nodes* head;
 } Agenda;
 
 #endif // STRUCTURES_H

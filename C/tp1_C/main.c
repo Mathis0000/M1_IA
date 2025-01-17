@@ -15,7 +15,7 @@ int main() {
 
     int choix;
     Evenement evenement;
-    char filename[256];
+    char nom_fichier[256];
     int numero;
 
     while (1) {
@@ -87,14 +87,14 @@ int main() {
                 break;
             case 3:
                 printf("Entrez le nom du fichier: ");
-                scanf("%s", filename);
-                sauvegarderAgenda(&agenda, filename);
+                scanf("%s", nom_fichier);
+                sauvegarderAgenda(&agenda, nom_fichier);
                 break;
             case 4:
                 libererAgenda(&agenda);
                 printf("Entrez le nom du fichier: ");
-                scanf("%s", filename);
-                chargerAgenda(&agenda, filename);
+                scanf("%s", nom_fichier);
+                chargerAgenda(&agenda, nom_fichier);
                 break;
             case 5:
                 afficherAgenda(&agenda);

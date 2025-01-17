@@ -9,7 +9,7 @@
  * @param evenement The event to be added to the agenda.
  */
 void ajouterEvenement(Agenda* agenda, Evenement evenement) {
-    Node* newNode = (Node*)malloc(sizeof(Node));
+    Nodes* newNode = (Nodes*)malloc(sizeof(Nodes));
     if (newNode == NULL) {
         perror("Erreur d'allocation de mémoire");
         return;
@@ -20,8 +20,8 @@ void ajouterEvenement(Agenda* agenda, Evenement evenement) {
     if (agenda->head == NULL) {
         agenda->head = newNode;
     } else {
-        Node* current = agenda->head;
-        Node* prev = NULL;
+        Nodes* current = agenda->head;
+        Nodes* prev = NULL;
 
         while (current != NULL && comparerEvenements(&current->evenement, &evenement) < 0) {
             prev = current;
@@ -131,9 +131,9 @@ int joursDansMois(int mois, int annee) {
  * @param agenda A pointer to the Agenda structure to be freed.
  */
 void libererAgenda(Agenda* agenda) {
-    Node* current = agenda->head;
+    Nodes* current = agenda->head;
     while (current != NULL) {
-        Node* next = current->next;
+        Nodes* next = current->next;
         free(current);
         current = next;
     }
@@ -158,7 +158,7 @@ void sauvegarderAgenda(Agenda* agenda, const char* filename) {
         return;
     }
 
-    Node* current = agenda->head;
+    Nodes* current = agenda->head;
     while (current != NULL) {
         fprintf(file, "%s %02d/%02d/%04d %02d/%02d %s\n",
                 current->evenement.titre,
@@ -186,8 +186,8 @@ void sauvegarderAgenda(Agenda* agenda, const char* filename) {
  * @param numero The number of the event to be removed.
  */
 void supprimerEvenement(Agenda* agenda, int numero) {
-    Node* current = agenda->head;
-    Node* prev = NULL;
+    Nodes* current = agenda->head;
+    Nodes* prev = NULL;
     int count = 1;
 
     while (current != NULL && count != numero) {

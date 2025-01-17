@@ -29,7 +29,7 @@ void afficherMenu() {
  * @param agenda A pointer to the Agenda structure to be displayed.
  */
 void afficherAgendaAvecNumeros(Agenda* agenda) {
-    Node* current = agenda->head;
+    Nodes* current = agenda->head;
     int count = 1;
     while (current != NULL) {
         printf("%d.%s %02d-%02d-%04d %02d:%02d %s\n",
@@ -56,7 +56,7 @@ void afficherAgendaAvecNumeros(Agenda* agenda) {
  * @param agenda A pointer to the Agenda structure to be displayed.
  */
 void afficherAgenda(Agenda* agenda) {
-    Node* current = agenda->head;
+    Nodes* current = agenda->head;
     while (current != NULL) {
         printf("%s %02d-%02d-%04d %02d:%02d %s\n",
                 current->evenement.titre,
