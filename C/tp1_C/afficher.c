@@ -7,13 +7,16 @@
  * It does not take any parameters and does not return any value.
  */
 void afficherMenu() {
-    printf("Menu:\n");
-    printf("1. Ajouter un evenement\n");
-    printf("2. Supprimer un evenement\n");
-    printf("3. Sauvegarder l'agenda\n");
-    printf("4. Charger un agenda\n");
-    printf("5. Afficher l'agenda\n");
-    printf("6. Quitter\n");
+    printf("\033[1;34m+----------------------------+\033[0m\n");
+    printf("\033[1;34m|             \033[1;34mMenu            |\033[0m\n");
+    printf("\033[1;34m+----------------------------+\033[0m\n");
+    printf("\033[1;32m| 1. Ajouter un evenement     |\033[0m\n");
+    printf("\033[1;32m| 2. Supprimer un evenement   |\033[0m\n");
+    printf("\033[1;32m| 3. Sauvegarder l'agenda     |\033[0m\n");
+    printf("\033[1;32m| 4. Charger un agenda        |\033[0m\n");
+    printf("\033[1;32m| 5. Afficher l'agenda        |\033[0m\n");
+    printf("\033[1;31m| 6. Quitter                  |\033[0m\n");
+    printf("\033[1;34m+----------------------------+\033[0m\n");
 }
 
 

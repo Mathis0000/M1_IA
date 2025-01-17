@@ -24,8 +24,11 @@ int main() {
         scanf("%d", &choix);
 
         switch (choix) {
-            case 1:
+            case 1: {
                 int result_mois;
+                int jourActuel, moisActuel, anneeActuelle;
+                obtenirDateActuelle(&jourActuel, &moisActuel, &anneeActuelle);
+
                 do {
                     printf("Entrez la date (JJ/MM/AAAA): ");
                     result_mois = scanf("%d/%d/%d", &evenement.jour, &evenement.mois, &evenement.annee);
@@ -39,8 +42,19 @@ int main() {
                     int joursMax = joursDansMois(evenement.mois, evenement.annee);
                     if (evenement.jour < 1 || evenement.jour > joursMax || evenement.mois < 1 || evenement.mois > 12 || evenement.annee < 2025 || evenement.annee > 2100) {
                         printf("Date invalide. Veuillez réessayer.\n");
+                        continue;
                     }
-                } while (evenement.jour < 1 || evenement.jour > joursDansMois(evenement.mois, evenement.annee) || evenement.mois < 1 || evenement.mois > 12 || evenement.annee < 2025 || evenement.annee > 2100);
+
+                    // Vérifier si la date est déjà révolue
+                    if (evenement.annee < anneeActuelle ||
+                        (evenement.annee == anneeActuelle && evenement.mois < moisActuel) ||
+                        (evenement.annee == anneeActuelle && evenement.mois == moisActuel && evenement.jour < jourActuel)) {
+                        printf("La date est déjà révolue. Veuillez entrer une date future.\n");
+                        continue;
+                    }
+
+                    break;
+                } while (1);
 
                 int result_heure;
                 do {
@@ -61,8 +75,10 @@ int main() {
                 printf("Entrez le commentaire: ");
                 fgets(evenement.commentaire, sizeof(evenement.commentaire), stdin);
                 evenement.commentaire[strcspn(evenement.commentaire, "\n")] = 0; // Enlever le caractère de nouvelle ligne
+
                 ajouterEvenement(&agenda, evenement);
                 break;
+            }
             case 2:
                 afficherAgendaAvecNumeros(&agenda);
                 printf("Entrez le numero de l'evenement a supprimer: ");

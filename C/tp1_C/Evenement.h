@@ -95,4 +95,18 @@ void libererAgenda(Agenda* agenda);
  void supprimerEvenement(Agenda* agenda, int numero);
 
 
+/**
+ * Gets the current date and stores it in the provided variables.
+ *
+ * This function retrieves the current date from the system and stores it in the
+ * variables passed as parameters. The values for day, month, and year are
+ * updated to reflect the current date.
+ *
+ * @param jour Pointer to an integer where the current day will be stored.
+ * @param mois Pointer to an integer where the current month will be stored.
+ * @param annee Pointer to an integer where the current year will be stored.
+ */
+ void obtenirDateActuelle(int *jour, int *mois, int *annee);
+
+
 #endif
