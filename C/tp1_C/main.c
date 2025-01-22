@@ -19,9 +19,16 @@ int main() {
     int numero;
 
     while (1) {
-        afficherMenu();
-        printf("Choisissez une option: ");
-        scanf("%d", &choix);
+        do {
+            afficherMenu();
+            printf("Choisissez une option: ");
+            if (scanf("%d", &choix) != 1) {
+            printf("Entrée invalide. Veuillez entrer un numéro valide.\n");
+            while (getchar() != '\n'); // Clear the input buffer
+            } else {
+            break;
+            }
+        } while (1);
 
         switch (choix) {
             case 1: {
@@ -48,7 +55,7 @@ int main() {
                     // Vérifier si la date est déjà révolue
                     if (evenement.annee < anneeActuelle ||
                         (evenement.annee == anneeActuelle && evenement.mois < moisActuel) ||
-                        (evenement.annee == anneeActuelle && evenement.mois == moisActuel && evenement.jour < jourActuel)) {
+                        (evenement.annee == anneeActuelle && evenement.mois == moisActuel && evenement.jour <= jourActuel)) {
                         printf("La date est déjà révolue. Veuillez entrer une date future.\n");
                         continue;
                     }
@@ -67,14 +74,58 @@ int main() {
                     }
                 } while (result_heure != 2 || evenement.heure < 0 || evenement.heure > 23 || evenement.minute < 0 || evenement.minute > 59);
 
-                printf("Entrez le titre: ");
-                getchar(); // Consommer le caractère de nouvelle ligne
-                fgets(evenement.titre, sizeof(evenement.titre), stdin);
-                evenement.titre[strcspn(evenement.titre, "\n")] = 0; // Enlever le caractère de nouvelle ligne
+                // verifie que taille inferieur a 30
+                while (getchar() != '\n');
 
-                printf("Entrez le commentaire: ");
-                fgets(evenement.commentaire, sizeof(evenement.commentaire), stdin);
-                evenement.commentaire[strcspn(evenement.commentaire, "\n")] = 0; // Enlever le caractère de nouvelle ligne
+                do {
+                    printf("Entrez le titre (max 30 caractères): ");
+                    fgets(evenement.titre, sizeof(evenement.titre), stdin);
+
+                    // Vérifier si la chaîne a été tronquée (pas de '\n' dans le tampon)
+                    if (evenement.titre[strlen(evenement.titre) - 1] != '\n') {
+                        printf("Le titre est trop long. Veuillez entrer un titre de 30 caractères maximum.\n");
+
+                        // Vider le tampon pour éviter des conflits
+                        while (getchar() != '\n');
+                        continue;
+                    }
+
+                    // Supprimer le caractère de nouvelle ligne si présent
+                    evenement.titre[strcspn(evenement.titre, "\n")] = 0;
+
+                    if (strlen(evenement.titre) > 30) {
+                        printf("Le titre est trop long. Veuillez entrer un titre de 30 caractères maximum.\n");
+                        continue;
+                    }
+
+                    break;
+                } while (1);
+
+                
+                // verifie que taille inferieur a 256
+                do {
+                    printf("Entrez le commentaire: ");
+                    fgets(evenement.commentaire, sizeof(evenement.commentaire), stdin);
+
+                    // Vérifier si la chaîne a été tronquée (pas de '\n' dans le tampon)
+                    if (evenement.commentaire[strlen(evenement.commentaire) - 1] != '\n') {
+                        printf("Le commentaire est trop long. Veuillez entrer un commentaire de 256 caractères maximum.\n");
+
+                        // Vider le tampon pour éviter des conflits
+                        while (getchar() != '\n');
+                        continue;
+                    }
+
+                    // Supprimer le caractère de nouvelle ligne si présent
+                    evenement.commentaire[strcspn(evenement.commentaire, "\n")] = 0;
+
+                    if (strlen(evenement.titre) > 30) {
+                        printf("Le commentaire est trop long. Veuillez entrer un commentaire de 256 caractères maximum.\n");
+                        continue;
+                    }
+
+                    break;
+                } while (1);
 
                 ajouterEvenement(&agenda, evenement);
                 break;
@@ -82,7 +133,11 @@ int main() {
             case 2:
                 afficherAgendaAvecNumeros(&agenda);
                 printf("Entrez le numero de l'evenement a supprimer: ");
-                scanf("%d", &numero);
+                if (scanf("%d", &numero) != 1) {
+                    printf("Entrée invalide. Veuillez entrer un numéro valide.\n");
+                    while (getchar() != '\n'); // Clear the input buffer
+                    break;
+                }
                 supprimerEvenement(&agenda, numero);
                 break;
             case 3:
