@@ -39,7 +39,12 @@ void chargerGraphe(Graphe* graphe, const char* filename) {
     }
 
     Voisin voisin;
-    while (fscanf(file, "%49s -> %49s : %d", voisin.self, voisin.nom_lien, &voisin.poids) == 3) {
+    char line[150];
+    while (fgets(line, sizeof(line), file)) {
+        if (sscanf(line, "%49s -> %49s : %d", voisin.self, voisin.nom_lien, &voisin.poids) != 3) {
+            fprintf(stderr, "Erreur: format incorrect dans la ligne: %s", line);
+            continue;
+        }
         if (voisin.poids < 0) {
             fprintf(stderr, "Erreur: poids négatif détecté pour l'arête %s -> %s\n", voisin.self, voisin.nom_lien);
             continue;
@@ -86,7 +91,9 @@ void afficherMenu() {
     printf("5. Charger un arbre\n");
     printf("6. Sauvegarder un arbre\n");
     printf("7. Distance d’un point par rapport au point de départ de l’arbre\n");
-    printf("8. Quitter\n");
+    printf("8. Afficher le graphe\n");
+    printf("9. Afficher l'arbre couvrant\n");
+    printf("10. Quitter\n");
     printf("Choisissez une option: ");
 }
 
@@ -160,62 +167,79 @@ void Prim(Graphe* graphe, Graphe* arbreCouvrant, char* sommetDepart) {
         // Ajouter l'arête minimale à l'arbre couvrant
         if (trouve) {
             ajouterEvenement(arbreCouvrant, minVoisin);
+            Voisin inverseVoisin;
+            strcpy(inverseVoisin.self, minVoisin.nom_lien);
+            strcpy(inverseVoisin.nom_lien, minVoisin.self);
+            inverseVoisin.poids = minVoisin.poids;
+            ajouterEvenement(arbreCouvrant, inverseVoisin); //permet de rester en non oriente
             strcpy(visites[nbVisites++], minVoisin.nom_lien);
         }
     }
 }
 
-
-int ComptePoints(Graphe* graphe) {
-    int nbPoints = 0;
-    Points* current = graphe->head;
-    while (current != NULL) {
-        nbPoints++;
-        current = current->next;
+int findPathWeightRec(Graphe* graph, char* src, char* dest, char visited[][50], int nbVisites) {
+    if (strcmp(src, dest) == 0) {
+        return 0;
     }
-    return nbPoints;
-}
 
-int findPathWeight(Graphe* graph, char* src, char* dest, int* visited, int* path, int* pathIndex) {
     Points* current = graph->head;
-    while (current != NULL) {
-        if (strcmp(current->voisin.self, src) == 0 && !visited[*pathIndex]) {
-            visited[*pathIndex] = 1;
-            path[*pathIndex] = current->voisin.poids;
-            (*pathIndex)++;
+    int minWeight = INT_MAX;
+    int found = 0;
 
-            if (strcmp(current->voisin.nom_lien, dest) == 0) {
-                return current->voisin.poids;
+    while (current != NULL) {
+        if (strcmp(current->voisin.self, src) == 0) {
+            int alreadyVisited = 0;
+            for (int i = 0; i < nbVisites; i++) {
+                if (strcmp(visited[i], current->voisin.nom_lien) == 0) {
+                    alreadyVisited = 1;
+                    break;
+                }
             }
 
-            int weight = current->voisin.poids + findPathWeight(graph, current->voisin.nom_lien, dest, visited, path, pathIndex);
-            if (weight > 0) {
-                return weight;
+            if (!alreadyVisited) {
+                strcpy(visited[nbVisites], current->voisin.nom_lien);
+                int weight = findPathWeightRec(graph, current->voisin.nom_lien, dest, visited, nbVisites + 1);
+                if (weight != -1) {
+                    minWeight = current->voisin.poids + weight;
+                    found = 1;
+                }
             }
         }
         current = current->next;
     }
 
-    (*pathIndex)--;
-    return -1;
+    return found ? minWeight : -1;
+}
+
+int findPathWeight(Graphe* graph, char* src, char* dest) {
+    char visited[MAX_SIZE][50];
+    int nbVisites = 0;
+    strcpy(visited[nbVisites++], src);
+    return findPathWeightRec(graph, src, dest, visited, nbVisites);
 }
 
 void creerGrapheManuellement(Graphe* graphe) {
     int nbAretes;
-    printf("Entrez le nombre d'arêtes à ajouter: ");
-    scanf("%d", &nbAretes);
-    getchar(); // Consommer le '\n' restant
+    printf("Entrez le nombre d'arêtes à ajouter : (par paire de 2 si le graphe est non orienté) ");
+    while (scanf("%d", &nbAretes) != 1 || nbAretes < 0 || getchar() != '\n') {
+        printf("Erreur: veuillez entrer un nombre entier positif.\n");
+        printf("Entrez le nombre d'arêtes à ajouter: ");
+        while (getchar() != '\n'); // Consommer les entrées incorrectes
+    }
 
     for (int i = 0; i < nbAretes; i++) {
         Voisin voisin;
-        do {
+        int validInput = 0;
+        while (!validInput) {
             printf("Entrez l'arête %d (format: A -> B : poids): ", i + 1);
-            scanf("%49s -> %49s : %d", voisin.self, voisin.nom_lien, &voisin.poids);
-            getchar(); // Consommer le '\n' restant
-            if (voisin.poids < 0) {
-                printf("Erreur: le poids ne peut pas être négatif. Veuillez réessayer.\n");
+            char input[150];
+            fgets(input, sizeof(input), stdin);
+            if (sscanf(input, "%49s -> %49s : %d", voisin.self, voisin.nom_lien, &voisin.poids) == 3 && voisin.poids >= 0) {
+                validInput = 1;
+            } else {
+                printf("Erreur: format incorrect ou poids négatif. Veuillez réessayer.\n");
             }
-        } while (voisin.poids < 0);
+        }
         ajouterEvenement(graphe, voisin);
     }
 }
@@ -249,13 +273,18 @@ int main() {
                 break;
 
             case 3:
-                printf("Entrez le nom du fichier pour sauvegarder le graphe: ");
-                fgets(filename, sizeof(filename), stdin);
-                filename[strcspn(filename, "\n")] = '\0';
-                sauvegarderGraphe(&graphe, filename);
+                if (graphe.head == NULL) {
+                    printf("Le graphe est vide et ne peut pas être sauvegardé.\n");
+                } else {
+                    printf("Entrez le nom du fichier pour sauvegarder le graphe: ");
+                    fgets(filename, sizeof(filename), stdin);
+                    filename[strcspn(filename, "\n")] = '\0';
+                    sauvegarderGraphe(&graphe, filename);
+                }
                 break;
 
             case 4:
+                libererGraphe(&arbreCouvrant);
                 printf("Entrez le sommet de départ: ");
                 fgets(sommetDepart, sizeof(sommetDepart), stdin);
                 sommetDepart[strcspn(sommetDepart, "\n")] = '\0';
@@ -273,10 +302,14 @@ int main() {
                 break;
 
             case 6:
-                printf("Entrez le nom du fichier pour sauvegarder l'arbre: ");
-                fgets(filename, sizeof(filename), stdin);
-                filename[strcspn(filename, "\n")] = '\0';
-                sauvegarderGraphe(&arbreCouvrant, filename);
+                 if (arbreCouvrant.head == NULL) {
+                    printf("L'arbre couvrant n'a pas encore été généré. Veuillez générer l'arbre couvrant d'abord.\n");
+                } else {
+                    printf("Entrez le nom du fichier pour sauvegarder l'arbre: ");
+                    fgets(filename, sizeof(filename), stdin);
+                    filename[strcspn(filename, "\n")] = '\0';
+                    sauvegarderGraphe(&arbreCouvrant, filename);
+                }
                 break;
 
             case 7:
@@ -291,20 +324,7 @@ int main() {
                     fgets(sommetArriver, sizeof(sommetArriver), stdin);
                     sommetArriver[strcspn(sommetArriver, "\n")] = '\0';
 
-                    int V = ComptePoints(&arbreCouvrant);
-                    int visited[V];
-                    int path[V];
-                    int pathIndex = 0;
-
-                    for (int i = 0; i < V; i++) {
-                        visited[i] = 0;
-                    }
-
-
-                    ///////pourquoi marche uniquement avec charge???
-                    sauvegarderGraphe(&arbreCouvrant, "filename.txt");
-                    chargerGraphe(&arbreCouvrant, "filename.txt");
-                    int distanceTotale = findPathWeight(&arbreCouvrant, sommetDepart, sommetArriver, visited, path, &pathIndex);
+                    int distanceTotale = findPathWeight(&arbreCouvrant, sommetDepart, sommetArriver);
 
                     if (distanceTotale != -1) {
                         printf("Le chemin entre %s et %s est : %d\n", sommetDepart, sommetArriver, distanceTotale);
@@ -313,13 +333,29 @@ int main() {
                 break;
 
             case 8:
+                 if (graphe.head == NULL) {
+                    printf("Le graphe n'a pas encore été généré.\n");
+                } else{
+                    afficherArbre(&graphe);
+                }                
+                break;
+
+            case 9:
+                 if (arbreCouvrant.head == NULL) {
+                    printf("L'arbre couvrant n'a pas encore été généré. Veuillez générer l'arbre couvrant d'abord.\n");
+                } else{
+                    afficherArbre(&arbreCouvrant);
+                }
+                break;
+
+            case 10:
                 printf("Quitter.\n");
                 break;
 
             default:
                 printf("Option invalide. Veuillez réessayer.\n");
         }
-    } while (choix != 8);
+    } while (choix != 10);
 
     libererGraphe(&graphe);
     libererGraphe(&arbreCouvrant);
