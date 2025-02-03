@@ -8,7 +8,7 @@
 EXEC=main
 
 # Liste des fichiers sources séparés par des espaces
-SOURCES=main.c 
+SOURCES=main.c afficher.c Prim+calcul_poid.c sauvegarde_chargement.c
 
 #Liste des fichiers objets
 OBJETS=$(SOURCES:%.c=%.o)
@@ -37,4 +37,8 @@ depend:
 	rm dependances
 
 #DEPENDANCIES
-main.o: main.c 
+main.o: main.c afficher.h Prim+calcul_poid.h sauvegarde_chargement.h structures.h
+afficher.o: afficher.c afficher.h structures.h
+Prim+calcul_poid.o: Prim+calcul_poid.c Prim+calcul_poid.h structures.h
+sauvegarde_chargement.o: sauvegarde_chargement.c sauvegarde_chargement.h structures.h Prim+calcul_poid.h
+
