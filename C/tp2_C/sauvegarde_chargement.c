@@ -1,4 +1,5 @@
 #include "sauvegarde_chargement.h"
+#include "./Prim+calcul_poid.h"
 
 /**
  * @brief Loads a graph from a file.
@@ -27,7 +28,7 @@ void chargerGraphe(Graphe* graphe, const char* filename) {
     Voisin voisin;
     char line[150];
     while (fgets(line, sizeof(line), file)) {
-        if (sscanf(line, "%49s -> %49s : %d", voisin.self, voisin.nom_lien, &voisin.poids) != 3) {
+        if (sscanf(line, "%49s -> %49s : %f", voisin.self, voisin.nom_lien, &voisin.poids) != 3) {
             fprintf(stderr, "Erreur: format incorrect dans la ligne: %s", line);
             continue;
         }
@@ -61,7 +62,7 @@ void sauvegarderGraphe(Graphe* graphe, const char* filename) {
 
     Points* current = graphe->head;
     while (current != NULL) {
-        fprintf(file, "%s -> %s : %d\n", current->voisin.self, current->voisin.nom_lien, current->voisin.poids);
+        fprintf(file, "%s -> %s : %f\n", current->voisin.self, current->voisin.nom_lien, current->voisin.poids);
         current = current->next;
     }
 
@@ -99,7 +100,7 @@ void libererGraphe(Graphe* graphe) {
  */
 void creerGrapheManuellement(Graphe* graphe) {
     int nbAretes;
-    printf("Entrez le nombre d'arêtes à ajouter : (par paire de 2 si le graphe est non orienté) ");
+    printf("Entrez le nombre d'arêtes à ajouter : (Une seul à ajouter, automatiquement en non orienté) ");
     while (scanf("%d", &nbAretes) != 1 || nbAretes < 0 || getchar() != '\n') {
         printf("Erreur: veuillez entrer un nombre entier positif.\n");
         printf("Entrez le nombre d'arêtes à ajouter: ");
@@ -113,12 +114,17 @@ void creerGrapheManuellement(Graphe* graphe) {
             printf("Entrez l'arête %d (format: A -> B : poids): ", i + 1);
             char input[150];
             fgets(input, sizeof(input), stdin);
-            if (sscanf(input, "%49s -> %49s : %d", voisin.self, voisin.nom_lien, &voisin.poids) == 3 && voisin.poids >= 0) {
+            if (sscanf(input, "%49s -> %49s : %f", voisin.self, voisin.nom_lien, &voisin.poids) == 3 && voisin.poids >= 0) {
                 valid = 1;
             } else {
                 printf("Erreur: format incorrect ou poids négatif. Veuillez réessayer.\n");
             }
         }
         ajouterEvenement(graphe, voisin);
+        Voisin inverseVoisin;
+        strcpy(inverseVoisin.self, voisin.nom_lien);
+        strcpy(inverseVoisin.nom_lien, voisin.self);
+        inverseVoisin.poids = voisin.poids;
+        ajouterEvenement(graphe, inverseVoisin); //permet de rester en non oriente
     }
 }

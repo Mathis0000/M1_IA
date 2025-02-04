@@ -4,6 +4,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <limits.h>
+#include <float.h>
 
 /**
  * @struct Voisin
@@ -23,7 +24,7 @@
 typedef struct {
     char self[50];
     char nom_lien[50];
-    int poids;
+    float poids;
 } Voisin;
 
 typedef struct Points {

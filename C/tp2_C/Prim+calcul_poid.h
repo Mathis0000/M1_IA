@@ -34,7 +34,7 @@ void Prim(Graphe* graphe, Graphe* arbreCouvrant, char* sommetDepart);
  * @param nbVisites The number of nodes visited so far.
  * @return The minimum weight of the path if a path exists, otherwise -1.
  */
-int PoidDuCheminRec(Graphe* graph, char* src, char* dest, char visited[][50], int nbVisites);
+float PoidDuCheminRec(Graphe* graph, char* src, char* dest, char visited[][50], int nbVisites);
 
 /**
  * @brief Calculate the weight of the path between two nodes in a graph.
@@ -47,7 +47,7 @@ int PoidDuCheminRec(Graphe* graph, char* src, char* dest, char visited[][50], in
  * @param dest The destination node.
  * @return The weight of the path from src to dest.
  */
-int PoidDuChemin(Graphe* graph, char* src, char* dest);
+float PoidDuChemin(Graphe* graph, char* src, char* dest);
 
 /**
  * @brief Checks if a given vertex exists in the graph.

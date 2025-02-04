@@ -35,7 +35,7 @@ void afficherMenu() {
 void afficherArbre(Graphe* graphe) {
     Points* current = graphe->head;
     while (current != NULL) {
-        printf("%s -> %s : %d\n", current->voisin.self, current->voisin.nom_lien, current->voisin.poids);
+        printf("%s -> %s : %f\n", current->voisin.self, current->voisin.nom_lien, current->voisin.poids);
         current = current->next;
     }
 }

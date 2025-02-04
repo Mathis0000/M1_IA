@@ -112,10 +112,10 @@ int main() {
                         }
                     } while (!sommetExiste(&arbreCouvrant, sommetArriver));
 
-                    int distanceTotale = PoidDuChemin(&arbreCouvrant, sommetDepart, sommetArriver);
+                    float distanceTotale = PoidDuChemin(&arbreCouvrant, sommetDepart, sommetArriver);
 
                     if (distanceTotale != -1) {
-                        printf("Le chemin entre %s et %s est : %d\n", sommetDepart, sommetArriver, distanceTotale);
+                        printf("Le chemin entre %s et %s est : %f\n", sommetDepart, sommetArriver, distanceTotale);
                     }
                 }
                 break;

@@ -41,7 +41,7 @@ void Prim(Graphe* graphe, Graphe* arbreCouvrant, char* sommetDepart) {
     while (trouve) {
         current = graphe->head;
         Voisin minVoisin;
-        minVoisin.poids = INT_MAX; // Valeur maximale possible d'un int
+        minVoisin.poids = FLT_MAX; // Valeur maximale possible d'un float
         trouve = 0;
 
         // Trouver l'arête minimale connectant un sommet visité à un sommet non visité
@@ -101,13 +101,13 @@ void Prim(Graphe* graphe, Graphe* arbreCouvrant, char* sommetDepart) {
  * @param nbVisites The number of nodes visited so far.
  * @return The minimum weight of the path if a path exists, otherwise -1.
  */
-int PoidDuCheminRec(Graphe* graph, char* src, char* dest, char visited[][50], int nbVisites) {
+float PoidDuCheminRec(Graphe* graph, char* src, char* dest, char visited[][50], int nbVisites) {
     if (strcmp(src, dest) == 0) {
         return 0;
     }
 
     Points* current = graph->head;
-    int minWeight = INT_MAX;
+    float minWeight = FLT_MAX;
     int found = 0;
 
     while (current != NULL) {
@@ -122,7 +122,7 @@ int PoidDuCheminRec(Graphe* graph, char* src, char* dest, char visited[][50], in
 
             if (!alreadyVisited) {
                 strcpy(visited[nbVisites], current->voisin.nom_lien);
-                int weight = PoidDuCheminRec(graph, current->voisin.nom_lien, dest, visited, nbVisites + 1);
+                float weight = PoidDuCheminRec(graph, current->voisin.nom_lien, dest, visited, nbVisites + 1);
                 if (weight != -1) {
                     minWeight = current->voisin.poids + weight;
                     found = 1;
@@ -146,7 +146,7 @@ int PoidDuCheminRec(Graphe* graph, char* src, char* dest, char visited[][50], in
  * @param dest The destination node.
  * @return The weight of the path from src to dest.
  */
-int PoidDuChemin(Graphe* graph, char* src, char* dest) {
+float PoidDuChemin(Graphe* graph, char* src, char* dest) {
     char visited[MAX_SIZE][50];
     int nbVisites = 0;
     strcpy(visited[nbVisites++], src);
