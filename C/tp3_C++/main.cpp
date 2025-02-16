@@ -27,7 +27,7 @@ public:
 };
 
 // Classe pour les armes
-class Arme : public Objet {
+class Arme : public Objet, public enable_shared_from_this<Arme> {
 public:
     int bonusAttaquePhysique;
     int bonusAttaqueMagique;
@@ -36,7 +36,7 @@ public:
 };
 
 // Classe pour les armures
-class Armure : public Objet {
+class Armure : public Objet, public enable_shared_from_this<Armure> {
 public:
     int bonusDefensePhysique;
     int bonusDefenseMagique;
@@ -56,7 +56,7 @@ public:
 };
 
 // Classe de base pour les personnages
-class Personnage {
+class Personnage : public enable_shared_from_this<Personnage> {
 protected:
     string nom;
     int pointsDeVie;
@@ -95,6 +95,9 @@ public:
     vector<shared_ptr<Objet>>& getInventaire() { return inventaire; }
     const string& getNom() const { return nom; }
 
+    shared_ptr<Arme> getArmeEquipee() const { return armeEquipee; }
+    shared_ptr<Armure> getArmureEquipee() const { return armureEquipee; }
+
     void attaquer(Personnage& cible, const Attaque& attaque);
     void subirDegats(int degats);
     void ajouterObjet(shared_ptr<Objet> objet);
@@ -124,12 +127,16 @@ void Potion::utiliser(Personnage& personnage) {
 }
 
 void Arme::utiliser(Personnage& personnage) {
-    personnage.equiperArme(shared_ptr<Arme>(this));
-    cout << "Vous avez équipé l'arme: " << nom << endl;
+    if (personnage.getArmeEquipee() != shared_from_this()) {
+        personnage.equiperArme(shared_from_this());
+        cout << "Vous avez équipé l'arme: " << nom << endl;
+    } else {
+        cout << "L'arme " << nom << " est déjà équipée." << endl;
+    }
 }
 
 void Armure::utiliser(Personnage& personnage) {
-    personnage.equiperArmure(shared_ptr<Armure>(this));
+    personnage.equiperArmure(shared_from_this());
     cout << "Vous avez équipé l'armure: " << nom << endl;
 }
 
@@ -144,8 +151,8 @@ void Personnage::attaquer(Personnage& cible, const Attaque& attaque) {
     int degatsPhysiques = valeurAttaquePhysique + attaque.degatPhysique - cible.defensePhysique;
     int degatsMagiques = valeurAttaqueMagique + attaque.degatMagique - cible.defenseMagique;
 
-    cout << "Degats Physiques: " << degatsPhysiques << " (Attaque Physique: " << valeurAttaquePhysique << ", Degat Physique: " << attaque.degatPhysique << ", Defense Physique: " << cible.defensePhysique << ")" << endl;
-    cout << "Degats Magiques: " << degatsMagiques << " (Attaque Magique: " << valeurAttaqueMagique << ", Degat Magique: " << attaque.degatMagique << ", Defense Magique: " << cible.defenseMagique << ")" << endl;
+    cout << "Dégâts Physiques: " << degatsPhysiques << " (Attaque Physique: " << valeurAttaquePhysique << ", Dégât Physique: " << attaque.degatPhysique << ", Défense Physique: " << cible.defensePhysique << ")" << endl;
+    cout << "Dégâts Magiques: " << degatsMagiques << " (Attaque Magique: " << valeurAttaqueMagique << ", Dégât Magique: " << attaque.degatMagique << ", Défense Magique: " << cible.defenseMagique << ")" << endl;
 
     int degatsTotaux = max(max(degatsPhysiques, 0), max(degatsMagiques, 0));
 
@@ -165,6 +172,8 @@ void Personnage::attaquer(Personnage& cible, const Attaque& attaque) {
     cout << cible.nom << " - Points de vie: " << cible.getPointsDeVie() << endl;
     cout << "----------------------------------------" << endl;
 }
+
+
 void Personnage::subirDegats(int degats) {
     pointsDeVie -= degats;
     if (pointsDeVie <= 0) {
@@ -184,16 +193,29 @@ void Personnage::ajouterObjet(shared_ptr<Objet> objet) {
     }
 }
 
+
 void Personnage::equiperArme(shared_ptr<Arme> arme) {
+    if (armeEquipee) {
+        valeurAttaquePhysique -= armeEquipee->bonusAttaquePhysique;
+        valeurAttaqueMagique -= armeEquipee->bonusAttaqueMagique;
+    }
     armeEquipee = arme;
-    valeurAttaquePhysique += arme->bonusAttaquePhysique;
-    valeurAttaqueMagique += arme->bonusAttaqueMagique;
+    if (arme) {
+        valeurAttaquePhysique += arme->bonusAttaquePhysique;
+        valeurAttaqueMagique += arme->bonusAttaqueMagique;
+    }
 }
 
 void Personnage::equiperArmure(shared_ptr<Armure> armure) {
+    if (armureEquipee) {
+        defensePhysique -= armureEquipee->bonusDefensePhysique;
+        defenseMagique -= armureEquipee->bonusDefenseMagique;
+    }
     armureEquipee = armure;
-    defensePhysique += armure->bonusDefensePhysique;
-    defenseMagique += armure->bonusDefenseMagique;
+    if (armure) {
+        defensePhysique += armure->bonusDefensePhysique;
+        defenseMagique += armure->bonusDefenseMagique;
+    }
 }
 
 ostream& operator<<(ostream& os, const Personnage& personnage) {
@@ -254,10 +276,15 @@ void Joueur::rencontrerAllie(Personnage& allie) {
 
 void Joueur::rencontrerObjet(shared_ptr<Objet> objet) {
     ajouterObjet(objet);
+    objet->utiliser(*this); // Utiliser l'objet immédiatement après l'avoir ajouté
 }
 
 void Joueur::sauvegarder(const string& fichier) {
     ofstream out(fichier, ios::binary);
+    if (!out) {
+        cerr << "Erreur : Impossible de sauvegarder le jeu." << endl;
+        return;
+    }
     out.write(reinterpret_cast<const char*>(&pointsDeVie), sizeof(pointsDeVie));
     out.write(reinterpret_cast<const char*>(&valeurAttaquePhysique), sizeof(valeurAttaquePhysique));
     out.write(reinterpret_cast<const char*>(&valeurAttaqueMagique), sizeof(valeurAttaqueMagique));
@@ -268,6 +295,10 @@ void Joueur::sauvegarder(const string& fichier) {
 
 void Joueur::charger(const string& fichier) {
     ifstream in(fichier, ios::binary);
+    if (!in) {
+        cerr << "Erreur : Impossible de charger le jeu." << endl;
+        return;
+    }
     in.read(reinterpret_cast<char*>(&pointsDeVie), sizeof(pointsDeVie));
     in.read(reinterpret_cast<char*>(&valeurAttaquePhysique), sizeof(valeurAttaquePhysique));
     in.read(reinterpret_cast<char*>(&valeurAttaqueMagique), sizeof(valeurAttaqueMagique));
@@ -279,6 +310,10 @@ void Joueur::charger(const string& fichier) {
 vector<Attaque> chargerAttaques(const string& fichier) {
     vector<Attaque> attaques;
     ifstream in(fichier);
+    if (!in) {
+        cerr << "Erreur : Impossible de charger les attaques." << endl;
+        return attaques;
+    }
     string ligne;
     while (getline(in, ligne)) {
         istringstream iss(ligne);
@@ -301,18 +336,19 @@ int main() {
     cin >> choixClasse;
 
     Joueur joueur("Joueur", 100, 10, 10, 5, 5);
+    shared_ptr<Arme> arme;
     if (choixClasse == 1) {
         // Barbare : bonus de dégâts physiques
-        joueur.setValeurAttaquePhysique(joueur.getValeurAttaquePhysique() + 15);    
-        auto arme = make_shared<Arme>("Épée", 5, 0);
-
+        joueur.setValeurAttaquePhysique(joueur.getValeurAttaquePhysique() + 15);
+        arme = make_shared<Arme>("Épée", 5, 0);
     } else if (choixClasse == 2) {
         // Magicien : bonus de dégâts magiques
         joueur.setValeurAttaqueMagique(joueur.getValeurAttaqueMagique() + 15);
-        auto arme = make_shared<Arme>("Baton magique", 0, 5);
+        arme = make_shared<Arme>("Bâton magique", 0, 5);
     } else {
         cout << "Choix invalide! Barbare choisi par défaut." << endl;
         joueur.setValeurAttaquePhysique(joueur.getValeurAttaquePhysique() + 15);
+        arme = make_shared<Arme>("Épée", 5, 0);
     }
 
     vector<Attaque> attaques = chargerAttaques("attaques.txt");
@@ -324,7 +360,6 @@ int main() {
     auto bouclier = make_shared<Armure>("Bouclier", 3, 2);
 
     joueur.rencontrerObjet(potion);
-    joueur.rencontrerObjet(arme);
     joueur.rencontrerObjet(bouclier);
 
     joueur.rencontrerEnnemi(ennemi, attaques);
