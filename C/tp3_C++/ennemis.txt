@@ -1,20 +1,19 @@
 Soldat des Ténèbres
-Rempeur de l'Ombre
-Scorpion Venimeuse
-Griffe de Fer
+Rampeur de l'Ombre
+Scorpion Venimeux
+Griffeur de Fer
 Faucheur de Sang
 Spectre Sombre
 Porteur de Mort
 Traqueur Nocturne
-Apporteur de Malheur
+Traqueur de Malheur
 Chevalier du Chaos
-Bête Infernale
-Assassin Fantôme
+Lion Infernale
+Fantôme
 Sorcier
 Broyeur d'Os
 Voleur d'Âmes
-Veuve Noire
 Roi du Tonnerre
 Spectre de Givre
-Orc Sauvage
+Chef Orc Sauvage
 Démon Abyssal

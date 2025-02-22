@@ -10,12 +10,14 @@
 
 using namespace std;
 
+class Personnage; // Forward declaration
+
 // Classe de base pour les objets
 class Objet {
 public:
     string nom;
     Objet(const string& n) : nom(n) {}
-    virtual void utiliser(class Personnage& personnage) = 0;
+    virtual void utiliser(Personnage& personnage) = 0;
     virtual ~Objet() = default;
 };
 
@@ -53,6 +55,18 @@ public:
 
     Attaque(const string& n, int dm, int dp)
         : nom(n), degatMagique(dm), degatPhysique(dp) {}
+};
+
+// Classe pour encapsuler une attaque comme un objet
+class AttaqueObjet : public Objet {
+public:
+    Attaque attaque;
+    AttaqueObjet(const Attaque& a) : Objet(a.nom), attaque(a) {}
+    void utiliser(Personnage& /*personnage*/) override {
+        // Logique pour utiliser l'attaque
+        cout << "Vous utilisez l'attaque: " << attaque.nom << endl;
+        // Vous pouvez ajouter ici la logique pour appliquer l'attaque
+    }
 };
 
 // Classe de base pour les personnages
@@ -102,28 +116,110 @@ public:
     void subirDegats(int degats);
     void ajouterObjet(shared_ptr<Objet> objet);
     void equiperArme(shared_ptr<Arme> arme);
+    void desequiperArme();
     void equiperArmure(shared_ptr<Armure> armure);
+    void desequiperArmure();
 
     friend ostream& operator<<(ostream& os, const Personnage& personnage);
 };
+void Personnage::desequiperArmure() {
+    if (armureEquipee) {
+        defensePhysique -= armureEquipee->bonusDefensePhysique;
+        defenseMagique -= armureEquipee->bonusDefenseMagique;
+        armureEquipee = nullptr;
+    }
+}
 
-// Classe pour le joueur
+void Personnage::desequiperArme() {
+    if (armeEquipee) {
+        valeurAttaquePhysique -= armeEquipee->bonusAttaquePhysique;
+        valeurAttaqueMagique -= armeEquipee->bonusAttaqueMagique;
+        armeEquipee = nullptr;
+    }
+}
+
+void Personnage::equiperArmure(shared_ptr<Armure> armure) {
+    if (armureEquipee) {
+        defensePhysique -= armureEquipee->bonusDefensePhysique;
+        defenseMagique -= armureEquipee->bonusDefenseMagique;
+    }
+    armureEquipee = armure;
+    if (armure) {
+        defensePhysique += armure->bonusDefensePhysique;
+        defenseMagique += armure->bonusDefenseMagique;
+    }
+}
+
+void Personnage::equiperArme(shared_ptr<Arme> arme) {
+    if (armeEquipee) {
+        valeurAttaquePhysique -= armeEquipee->bonusAttaquePhysique;
+        valeurAttaqueMagique -= armeEquipee->bonusAttaqueMagique;
+    }
+    armeEquipee = arme;
+    if (arme) {
+        valeurAttaquePhysique += arme->bonusAttaquePhysique;
+        valeurAttaqueMagique += arme->bonusAttaqueMagique;
+    }
+}
+
+
 class Joueur : public Personnage {
 public:
     Joueur(const string& n, int pv, int vap, int vam, int dp, int dm) : Personnage(n, pv, vap, vam, dp, dm) {}
 
-    void rencontrerEnnemi(Personnage& ennemi, const vector<Attaque>& attaques);
+    void rencontrerEnnemi(Personnage& ennemi, const vector<Attaque>& attaques ,string nomAleatoire);
     void rencontrerAllie(Personnage& allie);
     void rencontrerObjet(shared_ptr<Objet> objet);
     void sauvegarder(const string& fichier);
     void charger(const string& fichier);
+
+private:
+    vector<Attaque> getAttaquesDisponibles() const;
 };
+
+// Implémentation des méthodes de sauvegarde et de chargement
+void Joueur::sauvegarder(const string& fichier) {
+    ofstream out(fichier);
+    if (!out) {
+        cerr << "Erreur : Impossible de sauvegarder le joueur." << endl;
+        return;
+    }
+    out << nom << " " << pointsDeVie << " " << valeurAttaquePhysique << " " << valeurAttaqueMagique << " "
+        << defensePhysique << " " << defenseMagique << endl;
+    for (const auto& objet : inventaire) {
+        out << objet->nom << endl;
+    }
+}
+
+void Joueur::charger(const string& fichier) {
+    ifstream in(fichier);
+    if (!in) {
+        cerr << "Erreur : Impossible de charger le joueur." << endl;
+        return;
+    }
+    in >> nom >> pointsDeVie >> valeurAttaquePhysique >> valeurAttaqueMagique >> defensePhysique >> defenseMagique;
+    inventaire.clear();
+    string nomObjet;
+    while (in >> nomObjet) {
+        if (nomObjet == "Potion") {
+            inventaire.push_back(make_shared<Potion>());
+        } else {
+            cerr << "Erreur : Objet inconnu lors du chargement." << endl;
+        }
+    }
+}
 
 // Implémentation des méthodes
 
 void Potion::utiliser(Personnage& personnage) {
-    personnage.setPointsDeVie(min(personnage.getPointsDeVie() + 10, 100)); // Soigne 10 PV
-    cout << "Vous avez utilisé une potion et récupéré 10 PV." << endl;
+    personnage.setPointsDeVie(100); // Remet la vie à 100 PV
+    cout << "Vous avez utilisé une potion et récupéré tous vos PV." << endl;
+
+    // Supprimer la potion de l'inventaire
+    auto& inventaire = personnage.getInventaire();
+    inventaire.erase(remove_if(inventaire.begin(), inventaire.end(),
+                               [this](const shared_ptr<Objet>& obj) { return obj.get() == this; }),
+                     inventaire.end());
 }
 
 void Arme::utiliser(Personnage& personnage) {
@@ -173,7 +269,6 @@ void Personnage::attaquer(Personnage& cible, const Attaque& attaque) {
     cout << "----------------------------------------" << endl;
 }
 
-
 void Personnage::subirDegats(int degats) {
     pointsDeVie -= degats;
     if (pointsDeVie <= 0) {
@@ -194,30 +289,6 @@ void Personnage::ajouterObjet(shared_ptr<Objet> objet) {
 }
 
 
-void Personnage::equiperArme(shared_ptr<Arme> arme) {
-    if (armeEquipee) {
-        valeurAttaquePhysique -= armeEquipee->bonusAttaquePhysique;
-        valeurAttaqueMagique -= armeEquipee->bonusAttaqueMagique;
-    }
-    armeEquipee = arme;
-    if (arme) {
-        valeurAttaquePhysique += arme->bonusAttaquePhysique;
-        valeurAttaqueMagique += arme->bonusAttaqueMagique;
-    }
-}
-
-void Personnage::equiperArmure(shared_ptr<Armure> armure) {
-    if (armureEquipee) {
-        defensePhysique -= armureEquipee->bonusDefensePhysique;
-        defenseMagique -= armureEquipee->bonusDefenseMagique;
-    }
-    armureEquipee = armure;
-    if (armure) {
-        defensePhysique += armure->bonusDefensePhysique;
-        defenseMagique += armure->bonusDefenseMagique;
-    }
-}
-
 ostream& operator<<(ostream& os, const Personnage& personnage) {
     os << "Nom: " << personnage.nom << endl;
     os << "Points de vie: " << personnage.pointsDeVie << endl;
@@ -228,43 +299,59 @@ ostream& operator<<(ostream& os, const Personnage& personnage) {
     return os;
 }
 
-void Joueur::rencontrerEnnemi(Personnage& ennemi, const vector<Attaque>& attaques) {
+void Joueur::rencontrerEnnemi(Personnage& ennemi, const vector<Attaque>& attaques, string nomAleatoire) {
     bool tourJoueur = rand() % 2 == 0;
     while (getPointsDeVie() > 0 && ennemi.getPointsDeVie() > 0) {
         if (tourJoueur) {
             cout << "----------------------------------------" << endl;
             cout << "C'est votre tour!" << endl;
+            vector<Attaque> attaquesDisponibles = getAttaquesDisponibles();
+            if (attaquesDisponibles.empty()) {
+                cout << "Vous n'avez aucune attaque disponible!" << endl;
+                break;
+            }
             cout << "Choisissez une attaque :" << endl;
-            for (size_t i = 0; i < attaques.size(); ++i) {
-                cout << i + 1 << ". " << attaques[i].nom << endl;
+            for (size_t i = 0; i < attaquesDisponibles.size(); ++i) {
+                cout << i + 1 << ". " << attaquesDisponibles[i].nom  <<", Attaque Magique : "<<attaquesDisponibles[i].degatMagique<<", Attaque Physique : "<<attaquesDisponibles[i].degatPhysique << endl;
             }
             int choix;
             cin >> choix;
-            if (choix > 0 && static_cast<size_t>(choix) <= attaques.size()) {
-                attaquer(ennemi, attaques[choix - 1]);
+            if (choix > 0 && static_cast<size_t>(choix) <= attaquesDisponibles.size()) {
+                attaquer(ennemi, attaquesDisponibles[choix - 1]);
             } else {
                 cout << "Choix invalide! Tour perdu." << endl;
             }
         } else {
             cout << "----------------------------------------" << endl;
-            cout << "C'est le tour de l'ennemi!" << endl;
-            ennemi.attaquer(*this, attaques[rand() % attaques.size()]);
-        }
-        tourJoueur = !tourJoueur;
-    }
-    if (getPointsDeVie() > 0) {
-        cout << "Vous avez vaincu l'ennemi!" << endl;
-        // Récupérer les objets de l'ennemi
-        for (auto& objet : ennemi.getInventaire()) {
-            if (inventaire.size() < 10) {
-                inventaire.push_back(objet);
-                cout << "Vous avez récupéré: " << objet->nom << endl;
+            cout << "C'est le tour du " <<nomAleatoire<< " !" << endl;
+            if (!attaques.empty()) {
+                int attaqueAleatoire = rand() % attaques.size();
+                ennemi.attaquer(*this, attaques[attaqueAleatoire]);
             }
         }
-    } else {
-        cout << "Vous avez été vaincu par l'ennemi!" << endl;
+        tourJoueur = !tourJoueur;
+
+        // Vérifier si le joueur a été vaincu
+        if (getPointsDeVie() <= 0) {
+            cout << "Vous avez été vaincu!" << endl;
+            auto& inventaire = getInventaire();
+            auto it = find_if(inventaire.begin(), inventaire.end(), [](const shared_ptr<Objet>& obj) {
+                return dynamic_pointer_cast<Potion>(obj) != nullptr;
+            });
+            if (it != inventaire.end()) {
+                (*it)->utiliser(*this);
+            }
+        }
+
+        // Vérifier si l'ennemi a été vaincu
+        if (ennemi.getPointsDeVie() <= 0) {
+            cout << "Vous avez vaincu le " <<nomAleatoire<< " !"  << endl;
+            break;
+        }
     }
 }
+
+
 
 void Joueur::rencontrerAllie(Personnage& allie) {
     if (!allie.getInventaire().empty()) {
@@ -276,35 +363,16 @@ void Joueur::rencontrerAllie(Personnage& allie) {
 
 void Joueur::rencontrerObjet(shared_ptr<Objet> objet) {
     ajouterObjet(objet);
-    objet->utiliser(*this); // Utiliser l'objet immédiatement après l'avoir ajouté
 }
 
-void Joueur::sauvegarder(const string& fichier) {
-    ofstream out(fichier, ios::binary);
-    if (!out) {
-        cerr << "Erreur : Impossible de sauvegarder le jeu." << endl;
-        return;
+vector<Attaque> Joueur::getAttaquesDisponibles() const {
+    vector<Attaque> attaquesDisponibles;
+    for (const auto& objet : inventaire) {
+        if (auto attaqueObjet = dynamic_pointer_cast<AttaqueObjet>(objet)) {
+            attaquesDisponibles.push_back(attaqueObjet->attaque);
+        }
     }
-    out.write(reinterpret_cast<const char*>(&pointsDeVie), sizeof(pointsDeVie));
-    out.write(reinterpret_cast<const char*>(&valeurAttaquePhysique), sizeof(valeurAttaquePhysique));
-    out.write(reinterpret_cast<const char*>(&valeurAttaqueMagique), sizeof(valeurAttaqueMagique));
-    out.write(reinterpret_cast<const char*>(&defensePhysique), sizeof(defensePhysique));
-    out.write(reinterpret_cast<const char*>(&defenseMagique), sizeof(defenseMagique));
-    // Sauvegarder les autres attributs et objets de l'inventaire
-}
-
-void Joueur::charger(const string& fichier) {
-    ifstream in(fichier, ios::binary);
-    if (!in) {
-        cerr << "Erreur : Impossible de charger le jeu." << endl;
-        return;
-    }
-    in.read(reinterpret_cast<char*>(&pointsDeVie), sizeof(pointsDeVie));
-    in.read(reinterpret_cast<char*>(&valeurAttaquePhysique), sizeof(valeurAttaquePhysique));
-    in.read(reinterpret_cast<char*>(&valeurAttaqueMagique), sizeof(valeurAttaqueMagique));
-    in.read(reinterpret_cast<char*>(&defensePhysique), sizeof(defensePhysique));
-    in.read(reinterpret_cast<char*>(&defenseMagique), sizeof(defenseMagique));
-    // Charger les autres attributs et objets de l'inventaire
+    return attaquesDisponibles;
 }
 
 vector<Attaque> chargerAttaques(const string& fichier) {
@@ -319,15 +387,99 @@ vector<Attaque> chargerAttaques(const string& fichier) {
         istringstream iss(ligne);
         string nom;
         int degatMagique, degatPhysique;
-        if (iss >> nom >> degatMagique >> degatPhysique) {
+        // Utiliser '/' comme délimiteur pour séparer les valeurs
+        getline(iss, nom, '/');
+        iss >> degatMagique;
+        iss.ignore(); // Ignorer le '/'
+        iss >> degatPhysique;
+        if (!nom.empty() && iss) {
             attaques.emplace_back(nom, degatMagique, degatPhysique);
+        } else {
+            cerr << "Erreur : Format incorrect dans le fichier des attaques." << endl;
         }
     }
     return attaques;
 }
 
+
+vector<shared_ptr<Arme>> chargerArmes(const string& fichier) {
+    vector<shared_ptr<Arme>> armes;
+    ifstream in(fichier);
+    if (!in) {
+        cerr << "Erreur : Impossible de charger les armes." << endl;
+        return armes;
+    }
+    string ligne;
+    while (getline(in, ligne)) {
+        istringstream iss(ligne);
+        string nom;
+        int bonusAttaquePhysique, bonusAttaqueMagique;
+        // Utiliser '/' comme délimiteur pour séparer les valeurs
+        getline(iss, nom, '/');
+        iss >> bonusAttaquePhysique;
+        iss.ignore(); // Ignorer le '/'
+        iss >> bonusAttaqueMagique;
+        if (!nom.empty() && iss) {
+            armes.push_back(make_shared<Arme>(nom, bonusAttaquePhysique, bonusAttaqueMagique));
+        } else {
+            cerr << "Erreur : Format incorrect dans le fichier des armes." << endl;
+        }
+    }
+    return armes;
+}
+
+
+vector<shared_ptr<Armure>> chargerArmures(const string& fichier) {
+    vector<shared_ptr<Armure>> armures;
+    ifstream in(fichier);
+    if (!in) {
+        cerr << "Erreur : Impossible de charger les armures." << endl;
+        return armures;
+    }
+    string ligne;
+    while (getline(in, ligne)) {
+        istringstream iss(ligne);
+        string nom;
+        int bonusDefensePhysique, bonusDefenseMagique;
+        // Utiliser '/' comme délimiteur pour séparer les valeurs
+        getline(iss, nom, '/');
+        iss >> bonusDefensePhysique;
+        iss.ignore(); // Ignorer le '/'
+        iss >> bonusDefenseMagique;
+        if (!nom.empty() && iss) {
+            armures.push_back(make_shared<Armure>(nom, bonusDefensePhysique, bonusDefenseMagique));
+        } else {
+            cerr << "Erreur : Format incorrect dans le fichier des armures." << endl;
+        }
+    }
+    return armures;
+}
+
+string nomAleatoire() {
+    ifstream in("ennemis.txt");
+    if (!in) {
+        cerr << "Erreur : Impossible de charger les noms des ennemis." << endl;
+        return "";
+    }
+
+    vector<string> noms;
+    string nom;
+    while (getline(in, nom)) {
+        noms.push_back(nom);
+    }
+
+    int chance = rand() % noms.size();
+    return noms[chance];
+}
+
+
+
+
 int main() {
     srand(time(nullptr));
+    vector<Attaque> attaques = chargerAttaques("attaques.txt");
+    vector<shared_ptr<Arme>> armes = chargerArmes("armes.txt");
+    vector<shared_ptr<Armure>> armures = chargerArmures("armures.txt");
 
     int choixClasse;
     cout << "Choisissez votre classe :" << endl;
@@ -336,36 +488,214 @@ int main() {
     cin >> choixClasse;
 
     Joueur joueur("Joueur", 100, 10, 10, 5, 5);
+
+    // Ajouter une attaque aléatoire à l'inventaire du joueur
+    if (!attaques.empty()) {
+        int numero_attaque = rand() % attaques.size();
+        auto attaque_heros = make_shared<AttaqueObjet>(attaques[numero_attaque]);
+        joueur.ajouterObjet(attaque_heros);
+    }
+
     shared_ptr<Arme> arme;
+    shared_ptr<Armure> armure;
     if (choixClasse == 1) {
         // Barbare : bonus de dégâts physiques
         joueur.setValeurAttaquePhysique(joueur.getValeurAttaquePhysique() + 15);
         arme = make_shared<Arme>("Épée", 5, 0);
+        armure = make_shared<Armure>("Armure de l'apprenti soldat", 5, 0);
     } else if (choixClasse == 2) {
         // Magicien : bonus de dégâts magiques
         joueur.setValeurAttaqueMagique(joueur.getValeurAttaqueMagique() + 15);
         arme = make_shared<Arme>("Bâton magique", 0, 5);
+        armure = make_shared<Armure>("Armure de l'apprenti magicien", 0, 5);
     } else {
         cout << "Choix invalide! Barbare choisi par défaut." << endl;
         joueur.setValeurAttaquePhysique(joueur.getValeurAttaquePhysique() + 15);
         arme = make_shared<Arme>("Épée", 5, 0);
+        armure = make_shared<Armure>("Armure de l'apprenti soldat", 5, 0);
     }
 
-    vector<Attaque> attaques = chargerAttaques("attaques.txt");
-
-    Personnage ennemi("Ennemi", 50, 8, 8, 3, 3);
-    Personnage allie("Allié", 30, 5, 5, 2, 2);
+    // Équiper l'arme et l'armure
+    joueur.equiperArmure(armure);
+    joueur.ajouterObjet(armure);
+    joueur.equiperArme(arme);
+    joueur.ajouterObjet(arme);
 
     auto potion = make_shared<Potion>();
-    auto bouclier = make_shared<Armure>("Bouclier", 3, 2);
+    joueur.ajouterObjet(potion);
 
-    joueur.rencontrerObjet(potion);
-    joueur.rencontrerObjet(bouclier);
+    int nombre_de_tours = 0;
 
-    joueur.rencontrerEnnemi(ennemi, attaques);
-    joueur.rencontrerAllie(allie);
+    while (nombre_de_tours < 10) {
+        cout << "Inventaire du joueur:" << endl;
+        for (const auto& objet : joueur.getInventaire()) {
+            cout << "- " << objet->nom;
+            if (dynamic_pointer_cast<Arme>(objet)) {
+            cout << " (Arme)";
+            } else if (dynamic_pointer_cast<Armure>(objet)) {
+            cout << " (Armure)";
+            } else if (dynamic_pointer_cast<AttaqueObjet>(objet)) {
+            cout << " (Attaque)";
+            } else if (dynamic_pointer_cast<Potion>(objet)) {
+            cout << " (Potion)";
+            }
+            cout << endl;
+        }
 
-    cout << joueur << endl;
+        Personnage ennemi("Ennemi", 50, 8, 8, 3, 3);
+
+        joueur.rencontrerEnnemi(ennemi, attaques,nomAleatoire());
+        if (joueur.getPointsDeVie() == 0) {
+            break;
+        }
+        int chance = rand() % 4;
+        if (chance == 0) {
+            // Ajouter une nouvelle attaque au hasard
+            if (!attaques.empty()) {
+                int numero_attaque = rand() % attaques.size();
+                auto nouvelle_attaque = make_shared<AttaqueObjet>(attaques[numero_attaque]);
+                cout << "Vous avez de la chance aventurier, le monstre avait sur lui une nouvelle attaque!" << endl;
+                cout << "Vous avez obtenu : " << nouvelle_attaque->nom << endl;
+                joueur.ajouterObjet(nouvelle_attaque);
+            }
+        } else if (chance == 1) {
+            if (!armures.empty()) {
+                auto armureAleatoire = armures[rand() % armures.size()];
+                cout << "Vous avez trouvé une superbe armure qui appartenait à cette horible créature : " << armureAleatoire->nom << ", Bonus Défense Physique : " << armureAleatoire->bonusDefensePhysique<< ", Bonus Défense Magique : " << armureAleatoire->bonusDefenseMagique<< endl;
+                cout << "Stats de l'armure : " << endl;
+                if (joueur.getArmureEquipee()) {
+                    cout << "Votre armure actuelle : " << joueur.getArmureEquipee()->nom << ", Bonus défense Physique : " << joueur.getArmureEquipee()->bonusDefensePhysique << ", Bonus défense Magique : " << joueur.getArmureEquipee()->bonusDefenseMagique<< endl;
+                } else {
+                    cout << "Vous n'avez pas d'armure équipée actuellement." << endl;
+                }
+                cout << "Voulez-vous équiper la nouvelle armure ? (1: Oui, 0: Non)" << endl;
+                int choix;
+                cin >> choix;
+                if (choix == 1) {
+                    if (joueur.getArmureEquipee()) {
+                        auto& inventaire = joueur.getInventaire();
+                        inventaire.erase(remove_if(inventaire.begin(), inventaire.end(),
+                                                   [&joueur](const shared_ptr<Objet>& obj) { return obj == joueur.getArmureEquipee(); }),
+                                         inventaire.end());
+                        joueur.desequiperArmure();
+                    }
+                    joueur.ajouterObjet(armureAleatoire);
+                    joueur.equiperArmure(armureAleatoire);
+                    cout << "Vous avez équipé l'armure: " << armureAleatoire->nom << endl;
+                } else {
+                    cout << "Vous avez décidé de ne pas équiper la nouvelle armure." << endl;
+                }
+            }
+        } 
+        else if (chance == 2) {
+            if (!armes.empty()) {
+                auto armeAleatoire = armes[rand() % armes.size()];
+                cout << "Cette horible créature cachait une incroyable arme : " << armeAleatoire->nom << ", Bonus Attaque Physique : " << armeAleatoire->bonusAttaquePhysique << ", Bonus Attaque Magique : " << armeAleatoire->bonusAttaqueMagique << endl;
+                cout << "Stats de l'arme : " << endl;
+                if (joueur.getArmeEquipee()) {
+                    cout << "Votre arme actuelle : " << joueur.getArmeEquipee()->nom << ", Bonus Attaque Physique : " << joueur.getArmeEquipee()->bonusAttaquePhysique << ", Bonus Attaque Magique : " << joueur.getArmeEquipee()->bonusAttaqueMagique << endl;
+                } else {
+                    cout << "Vous n'avez pas d'arme équipée actuellement." << endl;
+                }
+                cout << "Voulez-vous équiper la nouvelle arme ? (1: Oui, 0: Non)" << endl;
+                int choix;
+                cin >> choix;
+                if (choix == 1) {
+                    if (joueur.getArmeEquipee()) {
+                        auto& inventaire = joueur.getInventaire();
+                        inventaire.erase(remove_if(inventaire.begin(), inventaire.end(),
+                                                   [&joueur](const shared_ptr<Objet>& obj) { return obj == joueur.getArmeEquipee(); }),
+                                         inventaire.end());
+                        joueur.desequiperArme();
+                    }
+                    joueur.ajouterObjet(armeAleatoire);
+                    joueur.equiperArme(armeAleatoire);
+                    cout << "Vous avez équipé l'arme: " << armeAleatoire->nom << endl;
+                } else {
+                    cout << "Vous avez décidé de ne pas équiper la nouvelle arme." << endl;
+                }
+            }
+        }
+        else {
+            // Le joueur rencontre un ami qui lui donne un objet au choix
+            cout << "Vous rencontrez un ami sur le chemin. Il vous propose de choisir un objet :" << endl;
+            cout << "1. Une arme" << endl;
+            cout << "2. Une armure" << endl;
+            cout << "3. Une potion" << endl;
+            int choix;
+            cin >> choix;
+
+            shared_ptr<Objet> nouvelObjet;
+            if (choix == 1) {
+                if (!armes.empty()) {
+                    auto armeAleatoire = armes[rand() % armes.size()];
+                    cout << "Votre meilleur amis à cette arme : " << armeAleatoire->nom << ", Bonus Attaque Physique : " << armeAleatoire->bonusAttaquePhysique << ", Bonus Attaque Magique : " << armeAleatoire->bonusAttaqueMagique << endl;
+                    if (joueur.getArmeEquipee()) {
+                        cout << "Votre arme actuelle : " << joueur.getArmeEquipee()->nom << ", Bonus Attaque Physique : " << joueur.getArmeEquipee()->bonusAttaquePhysique << ", Bonus Attaque Magique : " << joueur.getArmeEquipee()->bonusAttaqueMagique << endl;
+                    } else {
+                        cout << "Vous n'avez pas d'arme équipée actuellement." << endl;
+                    }
+                    cout << "Voulez-vous équiper la nouvelle arme ? (1: Oui, 0: Non)" << endl;
+                    int choix;
+                    cin >> choix;
+                    if (choix == 1) {
+                        if (joueur.getArmeEquipee()) {
+                            auto& inventaire = joueur.getInventaire();
+                            inventaire.erase(remove_if(inventaire.begin(), inventaire.end(),
+                                                       [&joueur](const shared_ptr<Objet>& obj) { return obj == joueur.getArmeEquipee(); }),
+                                             inventaire.end());
+                            joueur.desequiperArme();
+                        }
+                        joueur.ajouterObjet(armeAleatoire);
+                        joueur.equiperArme(armeAleatoire);
+                        cout << "Vous avez équipé l'arme: " << armeAleatoire->nom << endl;
+                    } else {
+                        cout << "Vous avez décidé de ne pas équiper la nouvelle arme." << endl;
+                    }
+                }
+            } else if (choix == 2) {
+                // Créer une nouvelle armure au hasard depuis armures.txt
+                if (!armures.empty()) {
+                    auto armureAleatoire = armures[rand() % armures.size()];
+                    cout << "Votre fabuleux amis à cette armure : " << armureAleatoire->nom << ", Bonus Défense Physique : " << armureAleatoire->bonusDefensePhysique<< ", Bonus Défense Magique : " << armureAleatoire->bonusDefenseMagique<< endl;
+                    if (joueur.getArmureEquipee()) {
+                        cout << "Votre armure actuelle : " << joueur.getArmureEquipee()->nom << ", Bonus défense Physique : " << joueur.getArmureEquipee()->bonusDefensePhysique << ", Bonus défense Magique : " << joueur.getArmureEquipee()->bonusDefenseMagique<< endl;
+                    } else {
+                        cout << "Vous n'avez pas d'armure équipée actuellement." << endl;
+                    }
+                    cout << "Voulez-vous équiper la nouvelle armure ? (1: Oui, 0: Non)" << endl;
+                    int choix;
+                    cin >> choix;
+                    if (choix == 1) {
+                        if (joueur.getArmureEquipee()) {
+                            auto& inventaire = joueur.getInventaire();
+                            inventaire.erase(remove_if(inventaire.begin(), inventaire.end(),
+                                                       [&joueur](const shared_ptr<Objet>& obj) { return obj == joueur.getArmureEquipee(); }),
+                                             inventaire.end());
+                            joueur.desequiperArmure();
+                        }
+                        joueur.ajouterObjet(armureAleatoire);
+                        joueur.equiperArmure(armureAleatoire);
+                        cout << "Vous avez équipé l'armure: " << armureAleatoire->nom << endl;
+                    }
+            } else if (choix == 3) {
+                auto potion = make_shared<Potion>();
+                joueur.ajouterObjet(potion);
+            } else {
+                cout << "Choix invalide! Vous ne recevez aucun objet." << endl;
+            }
+
+            if (nouvelObjet) {
+                joueur.ajouterObjet(nouvelObjet);
+                cout << "Votre ami vous a donné: " << nouvelObjet->nom << endl;
+            }
+        }
+    }
+        cout << joueur << endl;
+
+        cout << "----------------------------------------" << nombre_de_tours << endl;
+        nombre_de_tours++;
+    }
 
     return 0;
 }
