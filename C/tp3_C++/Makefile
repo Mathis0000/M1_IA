@@ -5,7 +5,7 @@ TARGET = programme
 SOURCES = main.cpp
 
 # Liste des dépendances (ajoutez vos fichiers d'entête ici)
-HEADERS = essai.hpp 
+HEADERS = interface.hpp 
 
 # Compilateur et flags
 CXX = g++
@@ -19,10 +19,10 @@ all: $(TARGET)
 
 # Règle pour créer l'exécutable
 $(TARGET): $(OBJECTS)
-	$(CXX) $(OBJECTS) -o $(TARGET)
+	$(CXX) $(OBJECTS) -o $(TARGET) -lsfml-graphics -lsfml-window -lsfml-system
 
 # Règle générique pour compiler les fichiers .cpp en .o
-%.o: %.cpp $(HEADERS)
+%.o: %.cpp
 	$(CXX) $(CXXFLAGS) -c $< -o $@
 
 # Nettoyage des fichiers générés
