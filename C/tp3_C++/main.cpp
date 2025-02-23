@@ -215,11 +215,13 @@ void Potion::utiliser(Personnage& personnage) {
     personnage.setPointsDeVie(100); // Remet la vie à 100 PV
     cout << "Vous avez utilisé une potion et récupéré tous vos PV." << endl;
 
-    // Supprimer la potion de l'inventaire
+    // Supprimer seulement la première potion de l'inventaire
     auto& inventaire = personnage.getInventaire();
-    inventaire.erase(remove_if(inventaire.begin(), inventaire.end(),
-                               [this](const shared_ptr<Objet>& obj) { return obj.get() == this; }),
-                     inventaire.end());
+    auto it = find_if(inventaire.begin(), inventaire.end(),
+                      [this](const shared_ptr<Objet>& obj) { return obj.get() == this; });
+    if (it != inventaire.end()) {
+        inventaire.erase(it);
+    }
 }
 
 void Arme::utiliser(Personnage& personnage) {
@@ -476,6 +478,9 @@ string nomAleatoire() {
 
 
 int main() {
+    cout << "Dans un monde ravagé par la guerre et la corruption, les anciennes légendes parlent d’un artefact perdu, la Pierre de Lumen, capable de restaurer l’équilibre entre la lumière et les ténèbres. "<<endl;
+    cout<< "Cet artefact est caché dans le Donjon du Néant, une forteresse maudite où résident des créatures cauchemardesques et leur maître impitoyable : Malakar, l’Ombre Éternelle."<<endl;
+    cout<< "Vous incarnez un aventurier solitaire, chargé d’infiltrer ce donjon maudit pour récupérer la pierre avant que les ténèbres ne consument définitivement le royaume." << endl;
     srand(time(nullptr));
     vector<Attaque> attaques = chargerAttaques("attaques.txt");
     vector<shared_ptr<Arme>> armes = chargerArmes("armes.txt");
@@ -550,7 +555,7 @@ int main() {
         }
         int chance = rand() % 4;
         if (chance == 0) {
-            // Ajouter une nouvelle attaque au hasard
+            // Ajouter une nouvelle attaque au hasard suite au combat contre le monstre
             if (!attaques.empty()) {
                 int numero_attaque = rand() % attaques.size();
                 auto nouvelle_attaque = make_shared<AttaqueObjet>(attaques[numero_attaque]);
@@ -558,7 +563,8 @@ int main() {
                 cout << "Vous avez obtenu : " << nouvelle_attaque->nom << endl;
                 joueur.ajouterObjet(nouvelle_attaque);
             }
-        } else if (chance == 1) {
+        } //vous looter l'armure que cachait le monstre
+        else if (chance == 1) {
             if (!armures.empty()) {
                 auto armureAleatoire = armures[rand() % armures.size()];
                 cout << "Vous avez trouvé une superbe armure qui appartenait à cette horible créature : " << armureAleatoire->nom << ", Bonus Défense Physique : " << armureAleatoire->bonusDefensePhysique<< ", Bonus Défense Magique : " << armureAleatoire->bonusDefenseMagique<< endl;
@@ -586,7 +592,7 @@ int main() {
                     cout << "Vous avez décidé de ne pas équiper la nouvelle armure." << endl;
                 }
             }
-        } 
+        } //vous looter l'arme que cachait le monstre
         else if (chance == 2) {
             if (!armes.empty()) {
                 auto armeAleatoire = armes[rand() % armes.size()];
@@ -614,6 +620,71 @@ int main() {
                 } else {
                     cout << "Vous avez décidé de ne pas équiper la nouvelle arme." << endl;
                 }
+            }
+        }//trouve qqch sur le chemin
+        else if (chance == 3) {
+            int chance_chemin = rand() % 3;
+            if (chance_chemin == 0) {
+                if (!armures.empty()) {
+                    auto armureAleatoire = armures[rand() % armures.size()];
+                    cout << "Vous avez trouvé une vielle armure dans une grotte : " << armureAleatoire->nom << ", Bonus Défense Physique : " << armureAleatoire->bonusDefensePhysique<< ", Bonus Défense Magique : " << armureAleatoire->bonusDefenseMagique<< endl;
+                    cout << "Stats de l'armure : " << endl;
+                    if (joueur.getArmureEquipee()) {
+                        cout << "Votre armure actuelle : " << joueur.getArmureEquipee()->nom << ", Bonus défense Physique : " << joueur.getArmureEquipee()->bonusDefensePhysique << ", Bonus défense Magique : " << joueur.getArmureEquipee()->bonusDefenseMagique<< endl;
+                    } else {
+                        cout << "Vous n'avez pas d'armure équipée actuellement." << endl;
+                    }
+                    cout << "Voulez-vous équiper la nouvelle armure ? (1: Oui, 0: Non)" << endl;
+                    int choix;
+                    cin >> choix;
+                    if (choix == 1) {
+                        if (joueur.getArmureEquipee()) {
+                            auto& inventaire = joueur.getInventaire();
+                            inventaire.erase(remove_if(inventaire.begin(), inventaire.end(),
+                                                       [&joueur](const shared_ptr<Objet>& obj) { return obj == joueur.getArmureEquipee(); }),
+                                             inventaire.end());
+                            joueur.desequiperArmure();
+                        }
+                        joueur.ajouterObjet(armureAleatoire);
+                        joueur.equiperArmure(armureAleatoire);
+                        cout << "Vous avez équipé l'armure: " << armureAleatoire->nom << endl;
+                    } else {
+                        cout << "Vous avez décidé de ne pas équiper la nouvelle armure." << endl;
+                    }
+                }
+            }
+            else if (chance_chemin == 1) {
+                if (!armes.empty()) {
+                    auto armeAleatoire = armes[rand() % armes.size()];
+                    cout << "Vous trébuché sur quelque chose durant votre voyage... : " << armeAleatoire->nom << ", Bonus Attaque Physique : " << armeAleatoire->bonusAttaquePhysique << ", Bonus Attaque Magique : " << armeAleatoire->bonusAttaqueMagique << endl;
+                    cout << "Stats de l'arme : " << endl;
+                    if (joueur.getArmeEquipee()) {
+                        cout << "Votre arme actuelle : " << joueur.getArmeEquipee()->nom << ", Bonus Attaque Physique : " << joueur.getArmeEquipee()->bonusAttaquePhysique << ", Bonus Attaque Magique : " << joueur.getArmeEquipee()->bonusAttaqueMagique << endl;
+                    } else {
+                        cout << "Vous n'avez pas d'arme équipée actuellement." << endl;
+                    }
+                    cout << "Voulez-vous équiper la nouvelle arme ? (1: Oui, 0: Non)" << endl;
+                    int choix;
+                    cin >> choix;
+                    if (choix == 1) {
+                        if (joueur.getArmeEquipee()) {
+                            auto& inventaire = joueur.getInventaire();
+                            inventaire.erase(remove_if(inventaire.begin(), inventaire.end(),
+                                                       [&joueur](const shared_ptr<Objet>& obj) { return obj == joueur.getArmeEquipee(); }),
+                                             inventaire.end());
+                            joueur.desequiperArme();
+                        }
+                        joueur.ajouterObjet(armeAleatoire);
+                        joueur.equiperArme(armeAleatoire);
+                        cout << "Vous avez équipé l'arme: " << armeAleatoire->nom << endl;
+                    } else {
+                        cout << "Vous avez décidé de ne pas équiper la nouvelle arme." << endl;
+                    }
+                }  
+            }
+            else {
+                cout << "Sur le chemin, vous vous rappelez les conseils de votre vieux maître et préparez une potion avec des herbes médicinales. " << endl;
+                joueur.ajouterObjet(potion);            
             }
         }
         else {
@@ -679,7 +750,7 @@ int main() {
                         cout << "Vous avez équipé l'armure: " << armureAleatoire->nom << endl;
                     }
             } else if (choix == 3) {
-                auto potion = make_shared<Potion>();
+                cout << "Votre ami vous donne une potion." << endl;
                 joueur.ajouterObjet(potion);
             } else {
                 cout << "Choix invalide! Vous ne recevez aucun objet." << endl;
@@ -696,6 +767,56 @@ int main() {
         cout << "----------------------------------------" << nombre_de_tours << endl;
         nombre_de_tours++;
     }
+
+    cout<<"------------------------------------------------------------"<<endl;
+    cout<<"------------------------------------------------------------"<<endl;
+    cout<<"Aventurier, votre combat touche à sa fin. Soudain, l'air devient pesant et, derrière vous, apparaît le boss du donjon : Malakar, l'Ombre Éternelle."<<endl;
+    Personnage ennemi("Ennemi", 100, 15, 15, 5, 5);
+    joueur.rencontrerEnnemi(ennemi, attaques,"Malakar, l'Ombre Éternelle");
+    auto inventaire = joueur.getInventaire();
+    auto it = find_if(inventaire.begin(), inventaire.end(), [](const shared_ptr<Objet>& obj) {
+        return dynamic_pointer_cast<Potion>(obj) != nullptr;
+    });
+
+    // Affiche le résultat final
+    if (joueur.getPointsDeVie() <= 0) {
+        cout << "Le sol tremble sous vos pieds. Malakar, l’Ombre Éternelle, bien que blessé, se redresse lentement, un sourire sinistre aux lèvres."<<endl;
+        cout<<"Son regard brûlant de malice transperce votre âme. Vous tentez une dernière attaque, mais votre corps ne répond plus."<<endl;
+        cout <<"L’air est devenu trop lourd, l’obscurité trop oppressante."<<endl;
+
+        cout << 'Un rire glacial résonne dans la salle du trône. "Tu as été un adversaire valeureux, aventurier… mais ici, c’est MOI qui dicte la fin de cette histoire."'<<endl;
+
+
+        cout << "Des ombres s’élèvent du sol, s’enroulant autour de vous comme des chaînes vivantes. Vous luttez, mais la force vous abandonne."<<endl;
+        cout <<"Peu à peu, la lumière quitte vos yeux, votre essence absorbée par l’abîme sans fin de Malakar."<<endl;
+
+        cout <<"Le monde extérieur ne sait rien de ce qui vient de se produire. Les villageois attendent, espérant voir leur héros revenir. Mais il ne reviendra jamais."<<endl;
+
+        cout <<"La nuit s’étend, plus sombre et plus froide que jamais. Dans les jours qui suivent, les ténèbres s’abattent sur le royaume. "<<endl;
+
+        cout<<"Au sommet de son trône d’ombres, Malakar règne désormais sans opposition."<<endl;
+
+        cout<<"L’ombre a triomphé." << endl;
+    } else{
+            cout <<"Le silence s’installe dans la salle du trône dévastée. Le corps de Malakar, l’Ombre Éternelle, s’effondre dans un tourbillon de ténèbres, ne laissant derrière lui qu’un écho lointain de son rire maudit."<<endl;
+            cout<<"Vous tenez enfin entre vos mains la Pierre de Lumen, son éclat vacillant dans l’obscurité pesante du donjon."<<endl;
+            if (joueur.getPointsDeVie() > 0 && it != inventaire.end()) { //fin malveillante
+                cout << "Mais alors que vous contemplez la Pierre de Lumen, une voix résonne dans votre esprit… une promesse de pouvoir, de domination."<<endl;
+                cout<<"Pourquoi restaurer un monde faible, alors que vous pourriez le modeler à votre image ?"<<endl;
+
+                cout <<"Dans un murmure, vous absorbez l’essence de la pierre. Une onde d’énergie obscure vous traverse, et vos yeux brillent d’un éclat surnaturel."<<endl;
+                cout<<"Vous quittez le donjon, mais ce n’est pas la lumière que vous ramenez… c’est une nouvelle ère d’ombres qui commence."<<endl;
+                cout<<"Désormais, c’est vous qui régnez sur la nuit..." << endl;
+            }
+            else{
+                cout<<"Alors que vous vous apprêtez à quitter le donjon, vous sentez la noirceur de Malakar toujours présente…"<<endl;
+                cout<<"Vous comprenez alors la vérité : la pierre ne peut être contenue, elle doit être détruite."<<endl;
+                cout<<"Dans un dernier acte de courage, vous brisez la Pierre de Lumen entre vos mains. Une explosion de lumière consume tout, purifiant le mal… mais aussi vous-même."<<endl;
+                cout<<"Lorsque les villageois s’approchent du donjon, ils ne trouvent que des ruines baignées d’un éclat lunaire. Votre nom ne sera peut-être jamais chanté, mais le monde, lui, est sauvé."<<endl;
+            }
+    }
+
+
 
     return 0;
 }
