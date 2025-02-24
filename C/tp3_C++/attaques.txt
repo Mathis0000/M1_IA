@@ -7,13 +7,13 @@ Griffe de l'Ombre/10/15
 Tornade/18/7
 Terreur Nocturne/22/3
 Souffle de Dragon/25/10
-Lamme Dansante/20/6
-Éclair Fugace/16/9
+Lame Dansante/20/6
+Eclair Fugace/16/9
 Lame de Vent/12/14
 Vague Souterraine/8/18
 Nova Lumineuse/22/6
 Poing Rocher/14/12
 Cri Spectral/19/4
-Pluie Étoilée/17/10
+Pluie Étoilee/17/10
 Choc Lunaire/21/8
 Braise Tornade/24/7

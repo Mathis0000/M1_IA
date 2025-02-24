@@ -11,6 +11,7 @@
 #include <algorithm>
 #include <SFML/Graphics.hpp>
 #include <SFML/Window.hpp>
+#include <SFML/Graphics.hpp>
 
 using namespace std;
 
@@ -484,12 +485,17 @@ int interface() {
     sf::Sprite backgroundSprite;
     backgroundSprite.setTexture(backgroundTexture);
 
-    // Adjust the sprite size to match the window size
-    sf::Vector2u textureSize = backgroundTexture.getSize();
-    sf::Vector2u windowSize = window.getSize();
-    backgroundSprite.setScale(
-        float(windowSize.x) / textureSize.x,
-        float(windowSize.y) / textureSize.y
+    sf::Texture backgroundTexturegrotte;
+    if (!backgroundTexturegrotte.loadFromFile("image/grotte.jpg")) {
+        std::cerr << "Erreur : Impossible de charger l'image !" << std::endl;
+        return 1;
+    }
+
+    sf::Sprite backgroundSpritegrotte;
+    backgroundSpritegrotte.setTexture(backgroundTexturegrotte);
+    backgroundSpritegrotte.setScale(
+        static_cast<float>(videoMode.width) / backgroundTexturegrotte.getSize().x,
+        static_cast<float>(videoMode.height) / backgroundTexturegrotte.getSize().y
     );
 
     sf::Font font;
@@ -588,7 +594,7 @@ int interface() {
     sf::FloatRect quitButtonTextRect = quitButtonText.getLocalBounds();
     quitButtonText.setOrigin(quitButtonTextRect.left + quitButtonTextRect.width / 2.0f, quitButtonTextRect.top + quitButtonTextRect.height / 2.0f);
     quitButtonText.setPosition(quitButton.getPosition().x + quitButton.getSize().x / 2.0f, quitButton.getPosition().y + quitButton.getSize().y / 2.0f);
-    
+
     sf::RectangleShape quitButtonn(sf::Vector2f(200, 50));
     quitButtonn.setFillColor(sf::Color::Red);
     quitButtonn.setPosition(videoMode.width - 220, videoMode.height - 70); // Position en bas à droite
@@ -602,25 +608,92 @@ int interface() {
     quitButtonnText.setOrigin(quitButtonnTextRect.left + quitButtonnTextRect.width / 2.0f, quitButtonnTextRect.top + quitButtonnTextRect.height / 2.0f);
     quitButtonnText.setPosition(quitButtonn.getPosition().x + quitButtonn.getSize().x / 2.0f, quitButtonn.getPosition().y + quitButtonn.getSize().y / 2.0f);
 
-    
-    
+    // Charger les textures des frames du héros
+    std::vector<sf::Texture> heroTextures(11);
+    for (int i = 0; i < 11; i++) {
+        std::string filename = "image/heros/frame_" + std::to_string(i + 1).insert(0, 4 - std::to_string(i + 1).length(), '0') + ".png";
+        if (!heroTextures[i].loadFromFile(filename)) {
+            std::cerr << "Erreur : impossible de charger " << filename << std::endl;
+            return -1;
+        }
+    }
+
+    sf::Sprite heroSprite;
+    heroSprite.setPosition(100, 400); // Position initiale
+    int frameIndex = 0;
+    sf::Clock clock;
+    float frameTime = 0.1f;  // 100ms par frame
+
+    // partie combat
     srand(time(nullptr));
     vector<Attaque> attaques = chargerAttaques("attaques.txt");
     vector<shared_ptr<Arme>> armes = chargerArmes("armes.txt");
     vector<shared_ptr<Armure>> armures = chargerArmures("armures.txt");
     Joueur joueur("Joueur", 100, 10, 10, 5, 5);
-
     // Ajouter une attaque aléatoire à l'inventaire du joueur
     if (!attaques.empty()) {
         int numero_attaque = rand() % attaques.size();
         auto attaque_heros = make_shared<AttaqueObjet>(attaques[numero_attaque]);
         joueur.ajouterObjet(attaque_heros);
     }
-
     shared_ptr<Arme> arme;
     shared_ptr<Armure> armure;
-    
-    bool showbarbaremagicien = true;
+
+    // Configurer l'inventaire et les boutons d'attaque
+    sf::RectangleShape inventoryBackground(sf::Vector2f(800, 950));
+    inventoryBackground.setFillColor(sf::Color(100, 100, 100, 200)); // Couleur grise transparente
+    inventoryBackground.setPosition(450, 100); 
+
+    vector<sf::RectangleShape> inventorySlots(10);
+    vector<sf::Text> inventorySlotTexts(10);
+    vector<sf::RectangleShape> attackButtons;
+    vector<sf::Text> attackButtonTexts;
+
+    for (int i = 0; i < 10; ++i) {
+        inventorySlots[i].setSize(sf::Vector2f(500, 80)); // Increased width to 150
+        inventorySlots[i].setFillColor(sf::Color::Transparent);
+        inventorySlots[i].setOutlineThickness(2);
+        inventorySlots[i].setOutlineColor(sf::Color::White);
+        inventorySlots[i].setPosition(520, 120 + i * 90); 
+
+        inventorySlotTexts[i].setFont(font);
+        inventorySlotTexts[i].setCharacterSize(20);
+        inventorySlotTexts[i].setFillColor(sf::Color::White);
+        inventorySlotTexts[i].setPosition(530, 130 + i * 90); 
+    }
+
+    for (size_t i = 0; i < joueur.getInventaire().size(); ++i) {
+        const auto& objet = joueur.getInventaire()[i];
+        if (auto arme = dynamic_pointer_cast<Arme>(objet)) {
+            inventorySlotTexts[i].setString(objet->nom + " (Arme)\nAttaque Physique: " + to_string(arme->bonusAttaquePhysique) + 
+                            ", Attaque Magique: " + to_string(arme->bonusAttaqueMagique));
+        } else if (auto armure = dynamic_pointer_cast<Armure>(objet)) {
+            inventorySlotTexts[i].setString(objet->nom + " (Armure)\nDefense Physique: " + to_string(armure->bonusDefensePhysique) + 
+                            ", Defense Magique: " + to_string(armure->bonusDefenseMagique));
+        } else if (auto attaqueObjet = dynamic_pointer_cast<AttaqueObjet>(objet)) {
+            sf::RectangleShape attackButton(sf::Vector2f(500, 80)); // Same size as inventory slots
+            attackButton.setFillColor(sf::Color::Red);
+            attackButton.setPosition(520, 120 + i * 90); 
+            attackButtons.push_back(attackButton);
+
+            sf::Text attackButtonText;
+            attackButtonText.setFont(font);
+            attackButtonText.setString(objet->nom + "\nPhysique: " + to_string(attaqueObjet->attaque.degatPhysique) + 
+                    ", Magique: " + to_string(attaqueObjet->attaque.degatMagique));
+            attackButtonText.setCharacterSize(20);
+            attackButtonText.setFillColor(sf::Color::White);
+            attackButtonText.setPosition(attackButton.getPosition().x + 10, attackButton.getPosition().y + 10);
+            attackButtonTexts.push_back(attackButtonText);
+        } else if (dynamic_pointer_cast<Potion>(objet)) {
+            inventorySlotTexts[i].setString(objet->nom + " (Potion)");
+        } else {
+            inventorySlotTexts[i].setString(objet->nom);
+        }
+    }
+
+    bool showBarbareMagicien = true;
+    bool showHero = false;
+    int nombre_de_tours = 0;
     while (window.isOpen()) {
         sf::Event event;
         while (window.pollEvent(event)) {
@@ -630,57 +703,46 @@ int interface() {
             if (event.type == sf::Event::MouseButtonPressed) {
                 if (event.mouseButton.button == sf::Mouse::Left) {
                     sf::Vector2i mousePos = sf::Mouse::getPosition(window);
-                    if (barbareButton.getGlobalBounds().contains(static_cast<sf::Vector2f>(mousePos))) {
-                        // barbare button logic
-                        std::cout << "barbare button clicked!" << std::endl;
-                        joueur.setValeurAttaquePhysique(joueur.getValeurAttaquePhysique() + 15);
-                        arme = make_shared<Arme>("Épée", 5, 0);
-                        armure = make_shared<Armure>("Armure de l'apprenti soldat", 5, 0);
-
-                        // Load new background image
-                        if (!backgroundTexture.loadFromFile("image/grotte.jpg")) {
-                            std::cerr << "Erreur : Impossible de charger l'image grotte.jpg !" << std::endl;
+                    if (showBarbareMagicien) {
+                        if (barbareButton.getGlobalBounds().contains(static_cast<sf::Vector2f>(mousePos))) {
+                            // Barbare button logic
+                            std::cout << "Barbare button clicked!" << std::endl;
+                            joueur.setValeurAttaquePhysique(joueur.getValeurAttaquePhysique() + 15);
+                            arme = make_shared<Arme>("Épée", 5, 0);
+                            armure = make_shared<Armure>("Armure de l'apprenti soldat", 5, 0);
                         }
-                        backgroundSprite.setTexture(backgroundTexture);
-                        
-                        showbarbaremagicien = false;
-                        sf::RectangleShape quitButton(sf::Vector2f(200, 50));
-                        quitButton.setFillColor(sf::Color::Red);
-                        quitButton.setPosition(videoMode.width - 220, videoMode.height - 70); // Position en bas à droite
-
-                        
-                    }
-                    if (magicienButton.getGlobalBounds().contains(static_cast<sf::Vector2f>(mousePos))) {
-                        // Magicien button logic
-                        std::cout << "Magicien button clicked!" << std::endl;
-                        joueur.setValeurAttaqueMagique(joueur.getValeurAttaqueMagique() + 15);
-                        arme = make_shared<Arme>("Bâton magique", 0, 5);
-                        armure = make_shared<Armure>("Armure de l'apprenti magicien", 0, 5);
-
-                        // Load new background image
-                        if (!backgroundTexture.loadFromFile("image/grotte.jpg")) {
-                            std::cerr << "Erreur : Impossible de charger l'image grotte.jpg !" << std::endl;
+                        if (magicienButton.getGlobalBounds().contains(static_cast<sf::Vector2f>(mousePos))) {
+                            // Magicien button logic
+                            Personnage ennemi("Ennemi", 50, 8, 8, 3, 3);
+                            std::cout << "Magicien button clicked!" << std::endl;
+                            joueur.setValeurAttaqueMagique(joueur.getValeurAttaqueMagique() + 15);
+                            arme = make_shared<Arme>("Bâton magique", 0, 5);
+                            armure = make_shared<Armure>("Armure de l'apprenti magicien", 0, 5);
                         }
-                        backgroundSprite.setTexture(backgroundTexture);
-
-                        showbarbaremagicien = false;
-                        sf::RectangleShape quitButton(sf::Vector2f(200, 50));
-                        quitButton.setFillColor(sf::Color::Red);
-                        quitButton.setPosition(videoMode.width - 220, videoMode.height - 70); // Position en bas à droite
-
                         
+                        Personnage ennemi("Ennemi", 50, 8, 8, 3, 3);
+                        heroSprite.setTexture(heroTextures[0]); // Initialiser avec la première frame
+                        showBarbareMagicien = false;
+                        showHero = true;
                     }
-                    
-                }
-                if (quitButton.getGlobalBounds().contains(static_cast<sf::Vector2f>(sf::Mouse::getPosition(window))) || quitButtonn.getGlobalBounds().contains(static_cast<sf::Vector2f>(sf::Mouse::getPosition(window)))) {
-                    window.close();
+                    if (quitButton.getGlobalBounds().contains(static_cast<sf::Vector2f>(mousePos)) ||
+                        quitButtonn.getGlobalBounds().contains(static_cast<sf::Vector2f>(mousePos))) {
+                        window.close();
+                    }
                 }
             }
         }
 
+        // Animation du héros
+        if (showHero && clock.getElapsedTime().asSeconds() > frameTime) {
+            frameIndex = (frameIndex + 1) % heroTextures.size();
+            heroSprite.setTexture(heroTextures[frameIndex]);
+            clock.restart();
+        }
+
         window.clear();
         window.draw(backgroundSprite); // Draw the background image
-        if (showbarbaremagicien) {
+        if (showBarbareMagicien) {
             window.draw(text); // Draw the text on top of the background
             window.draw(barbareButton); // Draw the barbare button
             window.draw(barbareButtonText); // Draw the barbare button text
@@ -688,10 +750,26 @@ int interface() {
             window.draw(magicienButtonText); // Draw the Magicien button text
             window.draw(quitButton); // Draw the quit button
             window.draw(quitButtonText); // Draw the quit button text
-        }
-        if (!showbarbaremagicien) {
+        }else if (!showBarbareMagicien) {
+            window.draw(backgroundSpritegrotte); // Draw the background image
             window.draw(quitButtonn); // Draw the quit button
             window.draw(quitButtonnText); // Draw the quit button text
+            window.draw(inventoryBackground);
+            for (const auto& attackButton : attackButtons) {
+                window.draw(attackButton);
+            }
+            for (const auto& attackButtonText : attackButtonTexts) {
+                window.draw(attackButtonText);
+            }
+            // Draw inventory slots and texts
+            for (int i = 0; i < 10; ++i) {
+                window.draw(inventorySlots[i]);
+                window.draw(inventorySlotTexts[i]);
+            }
+
+            if (showHero) {
+                window.draw(heroSprite);
+            }
         }
 
         window.display();
@@ -699,7 +777,6 @@ int interface() {
 
     return 0;
 }
-
 
 
 
