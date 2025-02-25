@@ -11,7 +11,6 @@
 #include <algorithm>
 #include <SFML/Graphics.hpp>
 #include <SFML/Window.hpp>
-#include <SFML/Graphics.hpp>
 
 using namespace std;
 
@@ -469,11 +468,112 @@ string nomAleatoire() {
 }
 
 
+void mettreAJourInventaire(Joueur& joueur, vector<sf::RectangleShape>& inventorySlots, vector<sf::Text>& inventorySlotTexts, vector<sf::RectangleShape>& attackButtons, vector<sf::Text>& attackButtonTexts, sf::Font& font) {
+    attackButtons.clear();
+    attackButtonTexts.clear();
+    for (auto& text : inventorySlotTexts) {
+        text.setString("");
+    }
+
+    for (size_t i = 0; i < joueur.getInventaire().size(); ++i) {
+        const auto& objet = joueur.getInventaire()[i];
+        if (auto arme = dynamic_pointer_cast<Arme>(objet)) {
+            inventorySlotTexts[i].setString(objet->nom + " (Arme)\nAttaque Physique: " + to_string(arme->bonusAttaquePhysique) +
+                            ", Attaque Magique: " + to_string(arme->bonusAttaqueMagique));
+        } else if (auto armure = dynamic_pointer_cast<Armure>(objet)) {
+            inventorySlotTexts[i].setString(objet->nom + " (Armure)\nDefense Physique: " + to_string(armure->bonusDefensePhysique) +
+                            ", Defense Magique: " + to_string(armure->bonusDefenseMagique));
+        } else if (auto attaqueObjet = dynamic_pointer_cast<AttaqueObjet>(objet)) {
+            sf::RectangleShape attackButton(sf::Vector2f(500, 80));
+            attackButton.setFillColor(sf::Color::Red);
+            attackButton.setPosition(520, 120 + i * 90);
+            attackButtons.push_back(attackButton);
+
+            sf::Text attackButtonText;
+            attackButtonText.setFont(font);
+            attackButtonText.setString(objet->nom + "\nPhysique: " + to_string(attaqueObjet->attaque.degatPhysique) +
+                    ", Magique: " + to_string(attaqueObjet->attaque.degatMagique));
+            attackButtonText.setCharacterSize(20);
+            attackButtonText.setFillColor(sf::Color::White);
+            attackButtonText.setPosition(attackButton.getPosition().x + 10, attackButton.getPosition().y + 10);
+            attackButtonTexts.push_back(attackButtonText);
+        } else if (dynamic_pointer_cast<Potion>(objet)) {
+            inventorySlotTexts[i].setString(objet->nom + " (Potion)");
+        } else {
+            inventorySlotTexts[i].setString(objet->nom);
+        }
+    }
+}
+
+std::vector<sf::Texture> chargerTexturesMechant(const std::string& cheminDossier, int nombreTextures, int taille) {
+    std::vector<sf::Texture> textures;
+    for (int i = 0; i < nombreTextures; ++i) {
+        std::string filename = cheminDossier + "/frame_" + std::to_string(i + 1).insert(0, 4 - std::to_string(i + 1).length(), '0') + ".png";
+        sf::Texture texture;
+        if (!texture.loadFromFile(filename)) {
+            std::cerr << "Erreur : impossible de charger " << filename << std::endl;
+        }
+        if (taille == 1) {
+            sf::Image image = texture.copyToImage();
+            sf::Image resizedImage;
+            resizedImage.create(image.getSize().x * 3, image.getSize().y * 3);
+            for (unsigned int x = 0; x < image.getSize().x; ++x) {
+                for (unsigned int y = 0; y < image.getSize().y; ++y) {
+                    sf::Color color = image.getPixel(x, y);
+                    for (int dx = 0; dx < 3; ++dx) {
+                        for (int dy = 0; dy < 3; ++dy) {
+                            resizedImage.setPixel(x * 3 + dx, y * 3 + dy, color);
+                        }
+                    }
+                }
+            }
+            texture.loadFromImage(resizedImage);
+        }
+        textures.push_back(texture);
+    }
+    return textures;
+}
+
+// Fonction pour afficher et animer un méchant
+void afficherMechant(sf::RenderWindow& window, std::vector<std::vector<sf::Texture>>& mechantsTextures, sf::Vector2f position, float frameTime, int& frameIndex, int& mechantActuel, sf::Clock& clock) {
+    // Vérifier que mechantActuel est dans les limites
+    if (mechantActuel < 0 || mechantActuel >= static_cast<int>(mechantsTextures.size())) {
+        cerr << "Erreur : mechantActuel hors limites." << endl;
+        return;
+    }
+
+    // Animer le méchant actuel
+    if (clock.getElapsedTime().asSeconds() > frameTime / 2) { // Diviser le temps de frame par 2 pour accélérer l'animation
+        frameIndex = (frameIndex + 1) % mechantsTextures[mechantActuel].size();
+        clock.restart();
+    }
+
+    // Vérifier que frameIndex est dans les limites après l'incrémentation
+    if (frameIndex < 0 || frameIndex >= static_cast<int>(mechantsTextures[mechantActuel].size())) {
+        frameIndex = 0; // Réinitialiser à 0 si hors limites
+    }
+
+    // Ajuster la position pour mechants2
+    sf::Vector2f adjustedPosition = position;
+
+        adjustedPosition.x -= 300; // Ajuster la position en x
+        adjustedPosition.y -= 300; // Ajuster la position en y
+    if (mechantActuel == 2){
+        adjustedPosition.y += 100; // Ajuster la position en y
+        adjustedPosition.x += 50; // Ajuster la position en x
+    }
+
+    // Dessiner le méchant actuel
+    sf::Sprite mechantSprite;
+    mechantSprite.setTexture(mechantsTextures[mechantActuel][frameIndex]);
+    mechantSprite.setPosition(adjustedPosition);
+    window.draw(mechantSprite);
+}
 
 int interface() {
     sf::VideoMode videoMode(1920, 1080);
     sf::RenderWindow window(videoMode, "Introduction");
-    window.setPosition(sf::Vector2i(0, 0)); // Assure l'affichage sur l'écran principal
+    window.setPosition(sf::Vector2i(0, 0));
 
     sf::Texture backgroundTexture;
     if (!backgroundTexture.loadFromFile("image/village.jpg")) {
@@ -504,8 +604,8 @@ int interface() {
         return 1;
     }
 
-    // Définition du texte en UTF-8
-    unsigned int characterSize = videoMode.width / 80; // Adjust character size based on screen width
+    // Initialisation des textes et boutons
+    unsigned int characterSize = videoMode.width / 80;
     std::string texteUtf8 = u8"Dans un monde ravagé par la guerre et la corruption, "
                             "les anciennes légendes parlent d’un artefact perdu, "
                             "la Pierre de Lumen, capable de restaurer l’équilibre entre "
@@ -516,13 +616,10 @@ int interface() {
                             "Vous incarnez un aventurier solitaire, chargé d’infiltrer ce donjon maudit "
                             "pour récupérer la pierre avant que les ténèbres ne consument définitivement le royaume.";
 
-    // Set the maximum width for the text to one-third of the screen width
     float maxTextWidth = videoMode.width / 3.0f;
-
     sf::Text text;
-    text.setLineSpacing(1.5f); // Optional: Adjust line spacing for better readability
+    text.setLineSpacing(1.5f);
 
-    // Wrap the text to fit within the specified width
     std::string wrappedText;
     std::istringstream words(texteUtf8);
     std::string word;
@@ -539,21 +636,17 @@ int interface() {
     }
 
     texteUtf8 = wrappedText;
-
-    // Conversion UTF-8 vers sf::String
     sf::String texteSfml = sf::String::fromUtf8(texteUtf8.begin(), texteUtf8.end());
-
     text.setFont(font);
-    text.setString(texteSfml); // Utilisation du texte converti
-    text.setCharacterSize(characterSize); // Utilisation de la taille de caractère adaptée
+    text.setString(texteSfml);
+    text.setCharacterSize(characterSize);
     text.setFillColor(sf::Color::White);
 
-    // Ajustement de la position du texte pour qu'il soit centré
     sf::FloatRect textRect = text.getLocalBounds();
     text.setOrigin(textRect.left + textRect.width / 2.0f, textRect.top + textRect.height / 2.0f);
     text.setPosition(sf::Vector2f(videoMode.width / 2.0f, videoMode.height / 2.0f));
 
-    // Create the "barbare" button
+    // Initialisation des boutons
     sf::RectangleShape barbareButton(sf::Vector2f(200, 50));
     barbareButton.setFillColor(sf::Color::Red);
     barbareButton.setPosition(videoMode.width / 2.0f - 100, text.getPosition().y + textRect.height / 2.0f + 20);
@@ -567,7 +660,6 @@ int interface() {
     barbareButtonText.setOrigin(barbareButtonTextRect.left + barbareButtonTextRect.width / 2.0f, barbareButtonTextRect.top + barbareButtonTextRect.height / 2.0f);
     barbareButtonText.setPosition(barbareButton.getPosition().x + barbareButton.getSize().x / 2.0f, barbareButton.getPosition().y + barbareButton.getSize().y / 2.0f);
 
-    // Create the "Magicien" button
     sf::RectangleShape magicienButton(sf::Vector2f(200, 50));
     magicienButton.setFillColor(sf::Color::Red);
     magicienButton.setPosition(videoMode.width / 2.0f - 100, barbareButton.getPosition().y + barbareButton.getSize().y + 20);
@@ -581,7 +673,6 @@ int interface() {
     magicienButtonText.setOrigin(magicienButtonTextRect.left + magicienButtonTextRect.width / 2.0f, magicienButtonTextRect.top + magicienButtonTextRect.height / 2.0f);
     magicienButtonText.setPosition(magicienButton.getPosition().x + magicienButton.getSize().x / 2.0f, magicienButton.getPosition().y + magicienButton.getSize().y / 2.0f);
 
-    // Create the "Quit" button
     sf::RectangleShape quitButton(sf::Vector2f(200, 50));
     quitButton.setFillColor(sf::Color::Red);
     quitButton.setPosition(videoMode.width / 2.0f - 100, magicienButton.getPosition().y + magicienButton.getSize().y + 20);
@@ -597,7 +688,7 @@ int interface() {
 
     sf::RectangleShape quitButtonn(sf::Vector2f(200, 50));
     quitButtonn.setFillColor(sf::Color::Red);
-    quitButtonn.setPosition(videoMode.width - 220, videoMode.height - 70); // Position en bas à droite
+    quitButtonn.setPosition(videoMode.width - 220, videoMode.height - 70);
 
     sf::Text quitButtonnText;
     quitButtonnText.setFont(font);
@@ -616,21 +707,43 @@ int interface() {
             std::cerr << "Erreur : impossible de charger " << filename << std::endl;
             return -1;
         }
+        sf::Image image = heroTextures[i].copyToImage();
+        sf::Image resizedImage;
+        resizedImage.create(image.getSize().x * 2, image.getSize().y * 2);
+        for (unsigned int x = 0; x < image.getSize().x; ++x) {
+            for (unsigned int y = 0; y < image.getSize().y; ++y) {
+                sf::Color color = image.getPixel(x, y);
+                for (int dx = 0; dx < 2; ++dx) {
+                    for (int dy = 0; dy < 2; ++dy) {
+                        resizedImage.setPixel(x * 2 + dx, y * 2 + dy, color);
+                    }
+                }
+            }
+        }
+        heroTextures[i].loadFromImage(resizedImage);
     }
 
     sf::Sprite heroSprite;
-    heroSprite.setPosition(100, 400); // Position initiale
+    heroSprite.setPosition(0, 200);
     int frameIndex = 0;
     sf::Clock clock;
-    float frameTime = 0.1f;  // 100ms par frame
+    float frameTime = 0.1f;
 
-    // partie combat
+    // Charger les textures des méchants
+    std::vector<std::vector<sf::Texture>> mechantsTextures;
+    mechantsTextures.push_back(chargerTexturesMechant("image/mechants1", 48,0));
+    mechantsTextures.push_back(chargerTexturesMechant("image/mechants2", 55,1));
+    mechantsTextures.push_back(chargerTexturesMechant("image/mechants3", 47,1));
+
+    
+    // Initialisation des objets de combat
     srand(time(nullptr));
     vector<Attaque> attaques = chargerAttaques("attaques.txt");
     vector<shared_ptr<Arme>> armes = chargerArmes("armes.txt");
     vector<shared_ptr<Armure>> armures = chargerArmures("armures.txt");
     Joueur joueur("Joueur", 100, 10, 10, 5, 5);
-    // Ajouter une attaque aléatoire à l'inventaire du joueur
+    Personnage ennemi(nomAleatoire(), 50, 8, 8, 3, 3);
+
     if (!attaques.empty()) {
         int numero_attaque = rand() % attaques.size();
         auto attaque_heros = make_shared<AttaqueObjet>(attaques[numero_attaque]);
@@ -641,59 +754,49 @@ int interface() {
 
     // Configurer l'inventaire et les boutons d'attaque
     sf::RectangleShape inventoryBackground(sf::Vector2f(800, 950));
-    inventoryBackground.setFillColor(sf::Color(100, 100, 100, 200)); // Couleur grise transparente
-    inventoryBackground.setPosition(450, 100); 
+    inventoryBackground.setFillColor(sf::Color(100, 100, 100, 200));
+    inventoryBackground.setPosition(450, 100);
+
+     // vie joueur
+     sf::RectangleShape healthBarBackground(sf::Vector2f(200, 20));
+     healthBarBackground.setFillColor(sf::Color::Red);
+     healthBarBackground.setPosition(20, 20);
+
+     sf::RectangleShape healthBar(sf::Vector2f(200, 20));
+     healthBar.setFillColor(sf::Color::Green);
+     healthBar.setPosition(20, 20);
+
+ //vie mechant
+ sf::RectangleShape healthBarBackgroundEnnemi(sf::Vector2f(100, 20));
+     healthBarBackgroundEnnemi.setFillColor(sf::Color::Red);
+     healthBarBackgroundEnnemi.setPosition(20, 20);
+
+     sf::RectangleShape healthBarEnnemi(sf::Vector2f(100, 20));
+     healthBarEnnemi.setFillColor(sf::Color::Green);
+     healthBarEnnemi.setPosition(20, 20);
 
     vector<sf::RectangleShape> inventorySlots(10);
     vector<sf::Text> inventorySlotTexts(10);
     vector<sf::RectangleShape> attackButtons;
     vector<sf::Text> attackButtonTexts;
-
+    auto potion = make_shared<Potion>();
     for (int i = 0; i < 10; ++i) {
-        inventorySlots[i].setSize(sf::Vector2f(500, 80)); // Increased width to 150
+        inventorySlots[i].setSize(sf::Vector2f(500, 80));
         inventorySlots[i].setFillColor(sf::Color::Transparent);
         inventorySlots[i].setOutlineThickness(2);
         inventorySlots[i].setOutlineColor(sf::Color::White);
-        inventorySlots[i].setPosition(520, 120 + i * 90); 
+        inventorySlots[i].setPosition(520, 120 + i * 90);
 
         inventorySlotTexts[i].setFont(font);
         inventorySlotTexts[i].setCharacterSize(20);
         inventorySlotTexts[i].setFillColor(sf::Color::White);
-        inventorySlotTexts[i].setPosition(530, 130 + i * 90); 
-    }
-
-    for (size_t i = 0; i < joueur.getInventaire().size(); ++i) {
-        const auto& objet = joueur.getInventaire()[i];
-        if (auto arme = dynamic_pointer_cast<Arme>(objet)) {
-            inventorySlotTexts[i].setString(objet->nom + " (Arme)\nAttaque Physique: " + to_string(arme->bonusAttaquePhysique) + 
-                            ", Attaque Magique: " + to_string(arme->bonusAttaqueMagique));
-        } else if (auto armure = dynamic_pointer_cast<Armure>(objet)) {
-            inventorySlotTexts[i].setString(objet->nom + " (Armure)\nDefense Physique: " + to_string(armure->bonusDefensePhysique) + 
-                            ", Defense Magique: " + to_string(armure->bonusDefenseMagique));
-        } else if (auto attaqueObjet = dynamic_pointer_cast<AttaqueObjet>(objet)) {
-            sf::RectangleShape attackButton(sf::Vector2f(500, 80)); // Same size as inventory slots
-            attackButton.setFillColor(sf::Color::Red);
-            attackButton.setPosition(520, 120 + i * 90); 
-            attackButtons.push_back(attackButton);
-
-            sf::Text attackButtonText;
-            attackButtonText.setFont(font);
-            attackButtonText.setString(objet->nom + "\nPhysique: " + to_string(attaqueObjet->attaque.degatPhysique) + 
-                    ", Magique: " + to_string(attaqueObjet->attaque.degatMagique));
-            attackButtonText.setCharacterSize(20);
-            attackButtonText.setFillColor(sf::Color::White);
-            attackButtonText.setPosition(attackButton.getPosition().x + 10, attackButton.getPosition().y + 10);
-            attackButtonTexts.push_back(attackButtonText);
-        } else if (dynamic_pointer_cast<Potion>(objet)) {
-            inventorySlotTexts[i].setString(objet->nom + " (Potion)");
-        } else {
-            inventorySlotTexts[i].setString(objet->nom);
-        }
+        inventorySlotTexts[i].setPosition(530, 130 + i * 90);
     }
 
     bool showBarbareMagicien = true;
     bool showHero = false;
     int nombre_de_tours = 0;
+    int quelle_monstre= rand() % 4;
     while (window.isOpen()) {
         sf::Event event;
         while (window.pollEvent(event)) {
@@ -705,25 +808,110 @@ int interface() {
                     sf::Vector2i mousePos = sf::Mouse::getPosition(window);
                     if (showBarbareMagicien) {
                         if (barbareButton.getGlobalBounds().contains(static_cast<sf::Vector2f>(mousePos))) {
-                            // Barbare button logic
-                            std::cout << "Barbare button clicked!" << std::endl;
                             joueur.setValeurAttaquePhysique(joueur.getValeurAttaquePhysique() + 15);
-                            arme = make_shared<Arme>("Épée", 5, 0);
+                            arme = make_shared<Arme>("Epee", 5, 0);
                             armure = make_shared<Armure>("Armure de l'apprenti soldat", 5, 0);
+                            showBarbareMagicien = false;
+                            showHero = true;
+                            heroSprite.setTexture(heroTextures[0]);
+
+                        joueur.equiperArmure(armure);
+                        joueur.ajouterObjet(armure);
+                        joueur.equiperArme(arme);
+                        joueur.ajouterObjet(arme);
+                        joueur.ajouterObjet(potion);
+                        mettreAJourInventaire(joueur, inventorySlots, inventorySlotTexts, attackButtons, attackButtonTexts, font);
                         }
                         if (magicienButton.getGlobalBounds().contains(static_cast<sf::Vector2f>(mousePos))) {
-                            // Magicien button logic
-                            Personnage ennemi("Ennemi", 50, 8, 8, 3, 3);
-                            std::cout << "Magicien button clicked!" << std::endl;
                             joueur.setValeurAttaqueMagique(joueur.getValeurAttaqueMagique() + 15);
-                            arme = make_shared<Arme>("Bâton magique", 0, 5);
+                            arme = make_shared<Arme>("Baton magique", 0, 5);
                             armure = make_shared<Armure>("Armure de l'apprenti magicien", 0, 5);
+                            showBarbareMagicien = false;
+                            showHero = true;
+                            heroSprite.setTexture(heroTextures[0]);
+
+                        joueur.equiperArmure(armure);
+                        joueur.ajouterObjet(armure);
+                        joueur.equiperArme(arme);
+                        joueur.ajouterObjet(arme);
+                        joueur.ajouterObjet(potion);
+                        mettreAJourInventaire(joueur, inventorySlots, inventorySlotTexts, attackButtons, attackButtonTexts, font);
                         }
+
                         
-                        Personnage ennemi("Ennemi", 50, 8, 8, 3, 3);
-                        heroSprite.setTexture(heroTextures[0]); // Initialiser avec la première frame
-                        showBarbareMagicien = false;
-                        showHero = true;
+                    }
+                    if (!showBarbareMagicien && showHero) {
+                        for (size_t i = 0; i < attackButtons.size(); ++i) {
+                            if (attackButtons[i].getGlobalBounds().contains(static_cast<sf::Vector2f>(mousePos))) {
+                                if (!attaques.empty()) {
+                                    joueur.attaquer(ennemi, attaques[i]);
+                                    if (ennemi.getPointsDeVie() > 0) {
+                                        ennemi.attaquer(joueur, attaques[rand() % attaques.size()]);
+                                    }
+                                    if (joueur.getPointsDeVie() <= 0) {
+                                        
+                                            cout << "Vous avez été vaincu!" << endl;
+                                            auto& inventaire = joueur.getInventaire();
+                                            auto it = find_if(inventaire.begin(), inventaire.end(), [](const shared_ptr<Objet>& obj) {
+                                                return dynamic_pointer_cast<Potion>(obj) != nullptr;
+                                            });
+                                            if (it != inventaire.end()) {
+                                                (*it)->utiliser(joueur);
+                                            }
+                                            mettreAJourInventaire(joueur, inventorySlots, inventorySlotTexts, attackButtons, attackButtonTexts, font);
+                    
+                                        if (joueur.getPointsDeVie() <= 0){
+                                            showHero = false;
+                                        }
+                                    }
+                                    if (ennemi.getPointsDeVie() <= 0) {
+                                        std::cout << "Vous avez vaincu l'ennemi!" << std::endl;
+                                        if (nombre_de_tours < 11) {
+                                            ennemi = Personnage(nomAleatoire(), 50, 8, 8, 3, 3);
+                                            quelle_monstre = rand() % mechantsTextures.size();
+                    
+                                            int aléatoire = rand() % 4;
+                                            if(aléatoire == 0){
+                                                auto armureAleatoire = armures[rand() % armures.size()];
+                                                if (joueur.getArmureEquipee()) {
+                                                    auto& inventaire = joueur.getInventaire();
+                                                    inventaire.erase(remove_if(inventaire.begin(), inventaire.end(),
+                                                                            [&joueur](const shared_ptr<Objet>& obj) { return obj == joueur.getArmureEquipee(); }),
+                                                                    inventaire.end());
+                                                    joueur.desequiperArmure();
+                                                }
+                                                joueur.ajouterObjet(armureAleatoire);
+                                                joueur.equiperArmure(armureAleatoire);
+                                            }
+                                            if(aléatoire == 1){
+                                                auto armeAleatoire = armes[rand() % armes.size()];
+                                                if (joueur.getArmeEquipee()) {
+                                                    auto& inventaire = joueur.getInventaire();
+                                                    inventaire.erase(remove_if(inventaire.begin(), inventaire.end(),
+                                                                            [&joueur](const shared_ptr<Objet>& obj) { return obj == joueur.getArmeEquipee(); }),
+                                                                    inventaire.end());
+                                                    joueur.desequiperArme();
+                                                }
+                                                joueur.ajouterObjet(armeAleatoire);
+                                                joueur.equiperArme(armeAleatoire);
+                                            }
+                                            if(aléatoire == 2){
+                                                auto attaqueAleatoire = attaques[rand() % attaques.size()];
+                                                joueur.ajouterObjet(make_shared<AttaqueObjet>(attaqueAleatoire));
+                                            }
+                                            if(aléatoire == 3){
+                                                joueur.ajouterObjet(potion);
+                                            }
+                                        }
+                                        nombre_de_tours++;
+                                    }
+                                        
+                                    mettreAJourInventaire(joueur, inventorySlots, inventorySlotTexts, attackButtons, attackButtonTexts, font);
+                                    std::cout << "Bouton touché" << std::endl;
+                                    break;
+                                }
+                            }
+                        }
                     }
                     if (quitButton.getGlobalBounds().contains(static_cast<sf::Vector2f>(mousePos)) ||
                         quitButtonn.getGlobalBounds().contains(static_cast<sf::Vector2f>(mousePos))) {
@@ -740,20 +928,26 @@ int interface() {
             clock.restart();
         }
 
+        // Mettre à jour la taille de la barre de vie du joueur
+        healthBar.setSize(sf::Vector2f(2 * joueur.getPointsDeVie(), 20));
+
+        // Mettre à jour la taille de la barre de vie de l'ennemi
+        healthBarEnnemi.setSize(sf::Vector2f(2 * ennemi.getPointsDeVie(), 20));
+
         window.clear();
-        window.draw(backgroundSprite); // Draw the background image
+        window.draw(backgroundSprite);
         if (showBarbareMagicien) {
-            window.draw(text); // Draw the text on top of the background
-            window.draw(barbareButton); // Draw the barbare button
-            window.draw(barbareButtonText); // Draw the barbare button text
-            window.draw(magicienButton); // Draw the Magicien button
-            window.draw(magicienButtonText); // Draw the Magicien button text
-            window.draw(quitButton); // Draw the quit button
-            window.draw(quitButtonText); // Draw the quit button text
-        }else if (!showBarbareMagicien) {
-            window.draw(backgroundSpritegrotte); // Draw the background image
-            window.draw(quitButtonn); // Draw the quit button
-            window.draw(quitButtonnText); // Draw the quit button text
+            window.draw(text);
+            window.draw(barbareButton);
+            window.draw(barbareButtonText);
+            window.draw(magicienButton);
+            window.draw(magicienButtonText);
+            window.draw(quitButton);
+            window.draw(quitButtonText);
+        } else if (!showBarbareMagicien) {
+            window.draw(backgroundSpritegrotte);
+            window.draw(quitButtonn);
+            window.draw(quitButtonnText);
             window.draw(inventoryBackground);
             for (const auto& attackButton : attackButtons) {
                 window.draw(attackButton);
@@ -761,14 +955,26 @@ int interface() {
             for (const auto& attackButtonText : attackButtonTexts) {
                 window.draw(attackButtonText);
             }
-            // Draw inventory slots and texts
             for (int i = 0; i < 10; ++i) {
                 window.draw(inventorySlots[i]);
                 window.draw(inventorySlotTexts[i]);
             }
-
             if (showHero) {
                 window.draw(heroSprite);
+                afficherMechant(window, mechantsTextures, sf::Vector2f(1500, 500), frameTime, frameIndex, quelle_monstre, clock);
+
+                // Draw health bar above the hero sprite
+                healthBar.setSize(sf::Vector2f(2 * joueur.getPointsDeVie(), 20)); // Update health bar size
+                healthBar.setPosition(heroSprite.getPosition().x + 100, heroSprite.getPosition().y - 30); // Position to the right of the hero sprite
+                healthBarBackground.setPosition(heroSprite.getPosition().x + 100, heroSprite.getPosition().y - 30); // Position to the right of the hero sprite
+                window.draw(healthBarBackground);
+                window.draw(healthBar);
+                // Mettre à jour la taille de la barre de vie de l'ennemi
+                healthBarEnnemi.setSize(sf::Vector2f(2 * ennemi.getPointsDeVie(), 20)); // Update health bar size
+                healthBarEnnemi.setPosition(heroSprite.getPosition().x + heroSprite.getGlobalBounds().width + 1000, heroSprite.getPosition().y - 30); // Position plus à droite du joueur
+                healthBarBackgroundEnnemi.setPosition(heroSprite.getPosition().x + heroSprite.getGlobalBounds().width + 1000, heroSprite.getPosition().y - 30); // Position plus à droite du joueur
+                window.draw(healthBarBackgroundEnnemi);
+                window.draw(healthBarEnnemi);
             }
         }
 
@@ -777,7 +983,6 @@ int interface() {
 
     return 0;
 }
-
 
 
 

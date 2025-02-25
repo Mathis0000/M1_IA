@@ -6,5 +6,5 @@ Armure Runique de l’Eclipse/0/10
 Exosquelette du Neant/5/5
 Heaume du Garde-Etoile/8/2
 Harnais de la Tempete/8/3
-Ecailles de l’Immortel/10/3
+Ecailles de l Immortel/10/3
 Armure Spectrale du Revenant/4/4

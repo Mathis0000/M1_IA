@@ -1,4 +1,4 @@
-Soldat des Ténèbres
+Soldat des Tenebres
 Rampeur de l'Ombre
 Scorpion Venimeux
 Griffeur de Fer
@@ -12,7 +12,7 @@ Lion Infernal
 Fantome
 Sorcier
 Broyeur d'Os
-Voleur d'Âmes
+Voleur d'Ames
 Roi du Tonnerre
 Spectre de Givre
 Chef Orc Sauvage
