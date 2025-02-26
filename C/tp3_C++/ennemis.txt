@@ -1,5 +1,5 @@
 Soldat des Tenebres
-Rampeur de l'Ombre
+Rampeur de l Ombre
 Scorpion Venimeux
 Griffeur de Fer
 Faucheur de Sang
@@ -11,7 +11,7 @@ Chevalier du Chaos
 Lion Infernal
 Fantome
 Sorcier
-Broyeur d'Os
+Broyeur d Os
 Voleur d'Ames
 Roi du Tonnerre
 Spectre de Givre

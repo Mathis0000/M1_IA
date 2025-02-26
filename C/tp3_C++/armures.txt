@@ -2,7 +2,7 @@ Cuirasse du Titan/10/0
 Armure Ombrelame/0/7
 Carapace du Dragon Ancien/9/1
 Plastron du Jugement/3/3
-Armure Runique de l’Eclipse/0/10
+Armure Runique de l Eclipse/0/10
 Exosquelette du Neant/5/5
 Heaume du Garde-Etoile/8/2
 Harnais de la Tempete/8/3

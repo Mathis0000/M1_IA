@@ -543,7 +543,7 @@ void afficherMechant(sf::RenderWindow& window, std::vector<std::vector<sf::Textu
     }
 
     // Animer le méchant actuel
-    if (clock.getElapsedTime().asSeconds() > frameTime / 2) { // Diviser le temps de frame par 2 pour accélérer l'animation
+    if (clock.getElapsedTime().asSeconds() > frameTime / 2) {
         frameIndex = (frameIndex + 1) % mechantsTextures[mechantActuel].size();
         clock.restart();
     }
@@ -555,10 +555,10 @@ void afficherMechant(sf::RenderWindow& window, std::vector<std::vector<sf::Textu
 
     // Ajuster la position pour mechants2
     sf::Vector2f adjustedPosition = position;
+    adjustedPosition.x -= 300; // Ajuster la position en x
+    adjustedPosition.y -= 300; // Ajuster la position en y
 
-        adjustedPosition.x -= 300; // Ajuster la position en x
-        adjustedPosition.y -= 300; // Ajuster la position en y
-    if (mechantActuel == 2){
+    if (mechantActuel == 2) {
         adjustedPosition.y += 100; // Ajuster la position en y
         adjustedPosition.x += 50; // Ajuster la position en x
     }
@@ -613,6 +613,7 @@ int interface() {
                             "Cet artefact est caché dans le Donjon du Néant, une forteresse maudite "
                             "où résident des créatures cauchemardesques et leur maître impitoyable : "
                             "Malakar, l’Ombre Éternelle."
+                            "Tuer 10 de ces généraux devrait être suffisant pour éveiller sa colère..."
                             "Vous incarnez un aventurier solitaire, chargé d’infiltrer ce donjon maudit "
                             "pour récupérer la pierre avant que les ténèbres ne consument définitivement le royaume.";
 
@@ -699,6 +700,57 @@ int interface() {
     quitButtonnText.setOrigin(quitButtonnTextRect.left + quitButtonnTextRect.width / 2.0f, quitButtonnTextRect.top + quitButtonnTextRect.height / 2.0f);
     quitButtonnText.setPosition(quitButtonn.getPosition().x + quitButtonn.getSize().x / 2.0f, quitButtonn.getPosition().y + quitButtonn.getSize().y / 2.0f);
 
+    sf::RectangleShape gameOverBackground(sf::Vector2f(800, 950));
+    gameOverBackground.setFillColor(sf::Color(100, 100, 100, 255)); // Gris opaque
+    gameOverBackground.setPosition(450, 100);
+
+    sf::Text gameOverText;
+    gameOverText.setFont(font);
+    gameOverText.setCharacterSize(20);
+    gameOverText.setLineSpacing(1.2f);
+
+    std::string texteUtf88 =
+        "Le sol tremble sous vos pieds. Malakar, l Ombre Eternelle, bien que blesse, se redresse lentement, un sourire sinistre aux levres. "
+        "Son regard brulant de malice transperce votre ame. Vous tentez une derniere attaque, mais votre corps ne repond plus. "
+        "L air est devenu trop lourd, l obscurite trop oppressante. "
+        "Un rire glacial resonne dans la salle du trone. \"Tu as ete un adversaire valeureux, aventurier... mais ici, c est MOI qui dicte la fin de cette histoire.\" "
+        "Des ombres s elevent du sol, s enroulant autour de vous comme des chaines vivantes. Vous luttez, mais la force vous abandonne. "
+        "Peu a peu, la lumiere quitte vos yeux, votre essence absorbee par l abime sans fin de Malakar. "
+        "Le monde exterieur ne sait rien de ce qui vient de se produire. Les villageois attendent, esperant voir leur heros revenir. Mais il ne reviendra jamais. "
+        "La nuit s etend, plus sombre et plus froide que jamais. Dans les jours qui suivent, les tenebres s abattent sur le royaume. "
+        "Au sommet de son trone d ombres, Malakar regne desormais sans opposition. "
+        "L ombre a triomphe.";
+        
+    float maxTextWidth2 = 1000.0f;
+    std::string wrappedText2;
+    std::istringstream words2(texteUtf88);
+    std::string word2;
+    float currentLineWidth2 = 0.0f;
+
+    while (words2 >> word2) {
+        sf::Text tempText(word2, font, 50);
+        float wordWidth = tempText.getLocalBounds().width;
+
+        if (currentLineWidth2 + wordWidth > maxTextWidth2) {
+            wrappedText2 += "\n";
+            currentLineWidth2 = 0.0f;
+        }
+
+        wrappedText2 += word2 + " ";
+        currentLineWidth2 += wordWidth + tempText.getLetterSpacing();
+    }
+
+    gameOverText.setString(wrappedText2);
+    cout<<gameOverBackground.getPosition().x<<endl;
+    gameOverText.setPosition(gameOverBackground.getPosition().x + 430.0f, gameOverBackground.getPosition().y + 500.0f);
+    gameOverText.setFillColor(sf::Color(255, 255, 255, 255)); // Couleur blanche opaque
+
+    sf::FloatRect gameOverTextRect = gameOverText.getLocalBounds();
+    gameOverText.setOrigin(gameOverTextRect.left + gameOverTextRect.width / 2.0f,
+                           gameOverTextRect.top + gameOverTextRect.height / 2.0f);
+
+    bool gameOver = false;
+
     // Charger les textures des frames du héros
     std::vector<sf::Texture> heroTextures(11);
     for (int i = 0; i < 11; i++) {
@@ -727,7 +779,43 @@ int interface() {
     heroSprite.setPosition(0, 200);
     int frameIndex = 0;
     sf::Clock clock;
+    sf::Clock clockheros;
     float frameTime = 0.1f;
+    float frametimemechant = 0.1f;
+    int frameIndexmechant = 0;
+    bool showHero = false; 
+
+
+    // Charger les textures des frames du boss
+    std::vector<sf::Texture> bossTextures(48);
+    for (int i = 0; i < 48; i++) {
+        std::string filename = "image/boss/frame_" + std::to_string(i + 1).insert(0, 4 - std::to_string(i + 1).length(), '0') + ".png";
+        if (!bossTextures[i].loadFromFile(filename)) {
+            std::cerr << "Erreur : impossible de charger " << filename << std::endl;
+            return -1;
+        }
+        sf::Image imageboss = bossTextures[i].copyToImage();
+        sf::Image resizedImageboss;
+        resizedImageboss.create(imageboss.getSize().x * 5, imageboss.getSize().y * 5);
+        for (unsigned int x = 0; x < imageboss.getSize().x; ++x) {
+            for (unsigned int y = 0; y < imageboss.getSize().y; ++y) {
+                sf::Color color = imageboss.getPixel(x, y);
+                for (int dx = 0; dx < 5; ++dx) {
+                    for (int dy = 0; dy < 5; ++dy) {
+                        resizedImageboss.setPixel(x * 5 + dx, y * 5 + dy, color);
+                    }
+                }
+            }
+        }
+        bossTextures[i].loadFromImage(resizedImageboss);
+    }
+
+    sf::Sprite bossSprite;
+    bossSprite.setPosition(1000, 0);
+    int frameIndexboss = 0;
+    sf::Clock clockboss;
+    float frameTimeboss = 0.1f;
+    bool showboss = false; 
 
     // Charger les textures des méchants
     std::vector<std::vector<sf::Texture>> mechantsTextures;
@@ -793,8 +881,23 @@ int interface() {
         inventorySlotTexts[i].setPosition(530, 130 + i * 90);
     }
 
+    sf::Texture backgroundTextureBoss;
+    if (!backgroundTextureBoss.loadFromFile("image/salle_du_boss_vide.jpg")) {
+        std::cerr << "Erreur : Impossible de charger l'image salle_du_boss_vide.jpg !" << std::endl;
+        return 1;
+    }
+
+    sf::Sprite backgroundSpriteBoss;
+    backgroundSpriteBoss.setTexture(backgroundTextureBoss);
+    backgroundSpriteBoss.setScale(
+        static_cast<float>(videoMode.width) / backgroundTextureBoss.getSize().x,
+        static_cast<float>(videoMode.height) / backgroundTextureBoss.getSize().y
+    );
+
+    
+
     bool showBarbareMagicien = true;
-    bool showHero = false;
+    bool salleboss = false;
     int nombre_de_tours = 0;
     int quelle_monstre= rand() % 4;
     while (window.isOpen()) {
@@ -862,6 +965,8 @@ int interface() {
                     
                                         if (joueur.getPointsDeVie() <= 0){
                                             showHero = false;
+                                            gameOver = true;
+                                            
                                         }
                                     }
                                     if (ennemi.getPointsDeVie() <= 0) {
@@ -903,6 +1008,11 @@ int interface() {
                                                 joueur.ajouterObjet(potion);
                                             }
                                         }
+                                        if (nombre_de_tours == 11) {
+                                            salleboss = true;
+                                            showboss = true;
+                                            ennemi = Personnage("Malakar, l'Ombre Éternelle", 100, 155, 25, 20, 20);
+                                        }
                                         nombre_de_tours++;
                                     }
                                         
@@ -920,13 +1030,23 @@ int interface() {
                 }
             }
         }
-
         // Animation du héros
-        if (showHero && clock.getElapsedTime().asSeconds() > frameTime) {
+        if (showHero && clockheros.getElapsedTime().asSeconds() > frameTime) {
+            window.draw(heroSprite);
             frameIndex = (frameIndex + 1) % heroTextures.size();
             heroSprite.setTexture(heroTextures[frameIndex]);
-            clock.restart();
+            clockheros.restart();
         }
+
+        // Animation du boss
+        if (showboss && clockboss.getElapsedTime().asSeconds() > frameTimeboss) {
+            window.draw(bossSprite);
+            frameIndexboss = (frameIndexboss + 1) % bossTextures.size();
+            bossSprite.setTexture(bossTextures[frameIndexboss]);
+            clockboss.restart();
+        }
+
+        
 
         // Mettre à jour la taille de la barre de vie du joueur
         healthBar.setSize(sf::Vector2f(2 * joueur.getPointsDeVie(), 20));
@@ -945,7 +1065,15 @@ int interface() {
             window.draw(quitButton);
             window.draw(quitButtonText);
         } else if (!showBarbareMagicien) {
-            window.draw(backgroundSpritegrotte);
+
+            if (!salleboss) {
+                window.draw(backgroundSpritegrotte);
+            }
+            if (salleboss) {
+                window.draw(backgroundSpriteBoss);
+                window.draw(bossSprite);
+            }
+            
             window.draw(quitButtonn);
             window.draw(quitButtonnText);
             window.draw(inventoryBackground);
@@ -961,8 +1089,9 @@ int interface() {
             }
             if (showHero) {
                 window.draw(heroSprite);
-                afficherMechant(window, mechantsTextures, sf::Vector2f(1500, 500), frameTime, frameIndex, quelle_monstre, clock);
-
+                if (!salleboss) {
+                    afficherMechant(window, mechantsTextures, sf::Vector2f(1500, 500), frametimemechant, frameIndexmechant, quelle_monstre, clock);
+                }
                 // Draw health bar above the hero sprite
                 healthBar.setSize(sf::Vector2f(2 * joueur.getPointsDeVie(), 20)); // Update health bar size
                 healthBar.setPosition(heroSprite.getPosition().x + 100, heroSprite.getPosition().y - 30); // Position to the right of the hero sprite
@@ -975,6 +1104,11 @@ int interface() {
                 healthBarBackgroundEnnemi.setPosition(heroSprite.getPosition().x + heroSprite.getGlobalBounds().width + 1000, heroSprite.getPosition().y - 30); // Position plus à droite du joueur
                 window.draw(healthBarBackgroundEnnemi);
                 window.draw(healthBarEnnemi);
+                
+            }
+            if (gameOver) {
+                window.draw(gameOverBackground);
+                window.draw(gameOverText);
             }
         }
 
@@ -1016,6 +1150,7 @@ int main() {
         cout<<endl;
         cout << "Dans un monde ravagé par la guerre et la corruption, les anciennes légendes parlent d’un artefact perdu, la Pierre de Lumen, capable de restaurer l’équilibre entre la lumière et les ténèbres. "<<endl;
         cout<< "Cet artefact est caché dans le Donjon du Néant, une forteresse maudite où résident des créatures cauchemardesques et leur maître impitoyable : Malakar, l’Ombre Éternelle."<<endl;
+        cout<< "Tuer 10 de ces généraux devrait être suffisant pour éveiller sa colère..."<<endl;
         cout<< "Vous incarnez un aventurier solitaire, chargé d’infiltrer ce donjon maudit pour récupérer la pierre avant que les ténèbres ne consument définitivement le royaume." << endl;
         cout<<endl;
         srand(time(nullptr));
