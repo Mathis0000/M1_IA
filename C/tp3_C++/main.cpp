@@ -613,7 +613,7 @@ int interface() {
                             "Cet artefact est caché dans le Donjon du Néant, une forteresse maudite "
                             "où résident des créatures cauchemardesques et leur maître impitoyable : "
                             "Malakar, l’Ombre Éternelle."
-                            "Tuer 10 de ces généraux devrait être suffisant pour éveiller sa colère..."
+                            "Tuer 5 de ces généraux devrait être suffisant pour éveiller sa colère..."
                             "Vous incarnez un aventurier solitaire, chargé d’infiltrer ce donjon maudit "
                             "pour récupérer la pierre avant que les ténèbres ne consument définitivement le royaume.";
 
@@ -700,55 +700,59 @@ int interface() {
     quitButtonnText.setOrigin(quitButtonnTextRect.left + quitButtonnTextRect.width / 2.0f, quitButtonnTextRect.top + quitButtonnTextRect.height / 2.0f);
     quitButtonnText.setPosition(quitButtonn.getPosition().x + quitButtonn.getSize().x / 2.0f, quitButtonn.getPosition().y + quitButtonn.getSize().y / 2.0f);
 
-    sf::RectangleShape gameOverBackground(sf::Vector2f(800, 950));
-    gameOverBackground.setFillColor(sf::Color(100, 100, 100, 255)); // Gris opaque
-    gameOverBackground.setPosition(450, 100);
+    sf::Texture gameOverTexture;
+    if (!gameOverTexture.loadFromFile("image/yeux.jpg")) {
+        std::cerr << "Erreur : Impossible de charger l'image yeux.jpg !" << std::endl;
+        return 1;
+    }
 
+    sf::Sprite gameOverBackground;
+    gameOverBackground.setTexture(gameOverTexture);
+    gameOverBackground.setScale(
+        static_cast<float>(videoMode.width) / gameOverTexture.getSize().x,
+        static_cast<float>(videoMode.height) / gameOverTexture.getSize().y
+    );
+
+    std::string texteUtf88 = u8"Le sol tremble sous vos pieds. Malakar, l'Ombre Eternelle, bien que blessé, se redresse lentement, un sourire sinistre aux lèvres. "
+                            "Son regard brûlant de malice transperce votre âme. Vous tentez une dernière attaque, mais votre corps ne répond plus. "
+                            "L'air est devenu trop lourd, l'obscurité trop oppressante. "
+                            "Un rire glacial résonne dans la salle du trône. \"Tu as été un adversaire valeureux, aventurier... mais ici, c'est MOI qui dicte la fin de cette histoire.\" "
+                            "Des ombres s'élèvent du sol, s'enroulant autour de vous comme des chaînes vivantes. Vous luttez, mais la force vous abandonne. "
+                            "Peu à peu, la lumière quitte vos yeux, votre essence absorbée par l'abîme sans fin de Malakar. "
+                            "Le monde extérieur ne sait rien de ce qui vient de se produire. Les villageois attendent, espérant voir leur héros revenir. Mais il ne reviendra jamais. "
+                            "La nuit s'étend, plus sombre et plus froide que jamais. Dans les jours qui suivent, les ténèbres s'abattent sur le royaume. "
+                            "Au sommet de son trône d'ombres, Malakar règne désormais sans opposition. "
+                            "L'ombre a triomphé.";
+
+    float maxTextWidth2 = videoMode.width / 3.0f;
     sf::Text gameOverText;
-    gameOverText.setFont(font);
-    gameOverText.setCharacterSize(20);
-    gameOverText.setLineSpacing(1.2f);
+    gameOverText.setLineSpacing(1.5f);
 
-    std::string texteUtf88 =
-        "Le sol tremble sous vos pieds. Malakar, l Ombre Eternelle, bien que blesse, se redresse lentement, un sourire sinistre aux levres. "
-        "Son regard brulant de malice transperce votre ame. Vous tentez une derniere attaque, mais votre corps ne repond plus. "
-        "L air est devenu trop lourd, l obscurite trop oppressante. "
-        "Un rire glacial resonne dans la salle du trone. \"Tu as ete un adversaire valeureux, aventurier... mais ici, c est MOI qui dicte la fin de cette histoire.\" "
-        "Des ombres s elevent du sol, s enroulant autour de vous comme des chaines vivantes. Vous luttez, mais la force vous abandonne. "
-        "Peu a peu, la lumiere quitte vos yeux, votre essence absorbee par l abime sans fin de Malakar. "
-        "Le monde exterieur ne sait rien de ce qui vient de se produire. Les villageois attendent, esperant voir leur heros revenir. Mais il ne reviendra jamais. "
-        "La nuit s etend, plus sombre et plus froide que jamais. Dans les jours qui suivent, les tenebres s abattent sur le royaume. "
-        "Au sommet de son trone d ombres, Malakar regne desormais sans opposition. "
-        "L ombre a triomphe.";
-        
-    float maxTextWidth2 = 1000.0f;
     std::string wrappedText2;
     std::istringstream words2(texteUtf88);
     std::string word2;
     float currentLineWidth2 = 0.0f;
-
     while (words2 >> word2) {
-        sf::Text tempText(word2, font, 50);
+        sf::Text tempText(word2, font, characterSize);
         float wordWidth = tempText.getLocalBounds().width;
-
         if (currentLineWidth2 + wordWidth > maxTextWidth2) {
             wrappedText2 += "\n";
             currentLineWidth2 = 0.0f;
         }
-
         wrappedText2 += word2 + " ";
         currentLineWidth2 += wordWidth + tempText.getLetterSpacing();
     }
 
-    gameOverText.setString(wrappedText2);
-    cout<<gameOverBackground.getPosition().x<<endl;
-    gameOverText.setPosition(gameOverBackground.getPosition().x + 430.0f, gameOverBackground.getPosition().y + 500.0f);
-    gameOverText.setFillColor(sf::Color(255, 255, 255, 255)); // Couleur blanche opaque
+    texteUtf8 = wrappedText2;
+    sf::String texteSfml2 = sf::String::fromUtf8(texteUtf8.begin(), texteUtf8.end());
+    gameOverText.setFont(font);
+    gameOverText.setString(texteSfml2);
+    gameOverText.setCharacterSize(characterSize);
+    gameOverText.setFillColor(sf::Color::White);
 
-    sf::FloatRect gameOverTextRect = gameOverText.getLocalBounds();
-    gameOverText.setOrigin(gameOverTextRect.left + gameOverTextRect.width / 2.0f,
-                           gameOverTextRect.top + gameOverTextRect.height / 2.0f);
-
+    sf::FloatRect textRect2 = text.getLocalBounds();
+    gameOverText.setOrigin(textRect2.left + textRect2.width / 2.0f, textRect2.top + textRect2.height / 2.0f);
+    gameOverText.setPosition(sf::Vector2f(videoMode.width / 2.0f, videoMode.height / 2.0f - 70));
     bool gameOver = false;
 
     // Charger les textures des frames du héros
@@ -971,7 +975,7 @@ int interface() {
                                     }
                                     if (ennemi.getPointsDeVie() <= 0) {
                                         std::cout << "Vous avez vaincu l'ennemi!" << std::endl;
-                                        if (nombre_de_tours < 11) {
+                                        if (nombre_de_tours < 4) {
                                             ennemi = Personnage(nomAleatoire(), 50, 8, 8, 3, 3);
                                             quelle_monstre = rand() % mechantsTextures.size();
                     
@@ -1008,7 +1012,7 @@ int interface() {
                                                 joueur.ajouterObjet(potion);
                                             }
                                         }
-                                        if (nombre_de_tours == 11) {
+                                        if (nombre_de_tours == 4) {
                                             salleboss = true;
                                             showboss = true;
                                             ennemi = Personnage("Malakar, l'Ombre Éternelle", 100, 155, 25, 20, 20);
@@ -1074,8 +1078,7 @@ int interface() {
                 window.draw(bossSprite);
             }
             
-            window.draw(quitButtonn);
-            window.draw(quitButtonnText);
+
             window.draw(inventoryBackground);
             for (const auto& attackButton : attackButtons) {
                 window.draw(attackButton);
@@ -1110,6 +1113,8 @@ int interface() {
                 window.draw(gameOverBackground);
                 window.draw(gameOverText);
             }
+            window.draw(quitButtonn);
+            window.draw(quitButtonnText);
         }
 
         window.display();
