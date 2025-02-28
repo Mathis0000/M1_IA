@@ -11,6 +11,8 @@
 #include <algorithm>
 #include <SFML/Graphics.hpp>
 #include <SFML/Window.hpp>
+#include <SFML/Audio.hpp>
+
 
 using namespace std;
 
@@ -570,7 +572,56 @@ void afficherMechant(sf::RenderWindow& window, std::vector<std::vector<sf::Textu
     window.draw(mechantSprite);
 }
 
+
 int interface() {
+    sf::Music music_battle;
+
+    // Charger un fichier audio au format OGG
+    if (!music_battle.openFromFile("audio/battle.mp3")) {
+        std::cerr << "Erreur : Impossible de charger le fichier audio !" << std::endl;
+        return -1;
+    }
+    
+    sf::Music music_boss_battle;
+
+    // Charger un fichier audio au format OGG
+    if (!music_boss_battle.openFromFile("audio/boss_battle.ogg")) {
+        std::cerr << "Erreur : Impossible de charger le fichier audio !" << std::endl;
+        return -1;
+    }
+
+    sf::Music music_defaite;
+
+    // Charger un fichier audio au format OGG
+    if (!music_defaite.openFromFile("audio/defaite.ogg")) {
+        std::cerr << "Erreur : Impossible de charger le fichier audio !" << std::endl;
+        return -1;
+    }
+
+    sf::Music music_menu;
+
+    // Charger un fichier audio au format OGG
+    if (!music_menu.openFromFile("audio/menu.mp3")) {
+        std::cerr << "Erreur : Impossible de charger le fichier audio !" << std::endl;
+        return -1;
+    }
+
+    sf::Music music_pouvoir;
+
+    // Charger un fichier audio au format OGG
+    if (!music_pouvoir.openFromFile("audio/pouvoir.ogg")) {
+        std::cerr << "Erreur : Impossible de charger le fichier audio !" << std::endl;
+        return -1;
+    }
+
+    sf::Music music_sacrifice;
+
+    // Charger un fichier audio au format OGG
+    if (!music_sacrifice.openFromFile("audio/sacrifice.ogg")) {
+        std::cerr << "Erreur : Impossible de charger le fichier audio !" << std::endl;
+        return -1;
+    }
+
     sf::VideoMode videoMode(1920, 1080);
     sf::RenderWindow window(videoMode, "Introduction");
     window.setPosition(sf::Vector2i(0, 0));
@@ -700,59 +751,10 @@ int interface() {
     quitButtonnText.setOrigin(quitButtonnTextRect.left + quitButtonnTextRect.width / 2.0f, quitButtonnTextRect.top + quitButtonnTextRect.height / 2.0f);
     quitButtonnText.setPosition(quitButtonn.getPosition().x + quitButtonn.getSize().x / 2.0f, quitButtonn.getPosition().y + quitButtonn.getSize().y / 2.0f);
 
-    sf::Texture gameOverTexture;
-    if (!gameOverTexture.loadFromFile("image/yeux.jpg")) {
-        std::cerr << "Erreur : Impossible de charger l'image yeux.jpg !" << std::endl;
-        return 1;
-    }
-
     sf::Sprite gameOverBackground;
-    gameOverBackground.setTexture(gameOverTexture);
-    gameOverBackground.setScale(
-        static_cast<float>(videoMode.width) / gameOverTexture.getSize().x,
-        static_cast<float>(videoMode.height) / gameOverTexture.getSize().y
-    );
+    sf::Texture gameOverTexture;
 
-    std::string texteUtf88 = u8"Le sol tremble sous vos pieds. Malakar, l'Ombre Eternelle, bien que blessé, se redresse lentement, un sourire sinistre aux lèvres. "
-                            "Son regard brûlant de malice transperce votre âme. Vous tentez une dernière attaque, mais votre corps ne répond plus. "
-                            "L'air est devenu trop lourd, l'obscurité trop oppressante. "
-                            "Un rire glacial résonne dans la salle du trône. \"Tu as été un adversaire valeureux, aventurier... mais ici, c'est MOI qui dicte la fin de cette histoire.\" "
-                            "Des ombres s'élèvent du sol, s'enroulant autour de vous comme des chaînes vivantes. Vous luttez, mais la force vous abandonne. "
-                            "Peu à peu, la lumière quitte vos yeux, votre essence absorbée par l'abîme sans fin de Malakar. "
-                            "Le monde extérieur ne sait rien de ce qui vient de se produire. Les villageois attendent, espérant voir leur héros revenir. Mais il ne reviendra jamais. "
-                            "La nuit s'étend, plus sombre et plus froide que jamais. Dans les jours qui suivent, les ténèbres s'abattent sur le royaume. "
-                            "Au sommet de son trône d'ombres, Malakar règne désormais sans opposition. "
-                            "L'ombre a triomphé.";
-
-    float maxTextWidth2 = videoMode.width / 3.0f;
     sf::Text gameOverText;
-    gameOverText.setLineSpacing(1.5f);
-
-    std::string wrappedText2;
-    std::istringstream words2(texteUtf88);
-    std::string word2;
-    float currentLineWidth2 = 0.0f;
-    while (words2 >> word2) {
-        sf::Text tempText(word2, font, characterSize);
-        float wordWidth = tempText.getLocalBounds().width;
-        if (currentLineWidth2 + wordWidth > maxTextWidth2) {
-            wrappedText2 += "\n";
-            currentLineWidth2 = 0.0f;
-        }
-        wrappedText2 += word2 + " ";
-        currentLineWidth2 += wordWidth + tempText.getLetterSpacing();
-    }
-
-    texteUtf8 = wrappedText2;
-    sf::String texteSfml2 = sf::String::fromUtf8(texteUtf8.begin(), texteUtf8.end());
-    gameOverText.setFont(font);
-    gameOverText.setString(texteSfml2);
-    gameOverText.setCharacterSize(characterSize);
-    gameOverText.setFillColor(sf::Color::White);
-
-    sf::FloatRect textRect2 = text.getLocalBounds();
-    gameOverText.setOrigin(textRect2.left + textRect2.width / 2.0f, textRect2.top + textRect2.height / 2.0f);
-    gameOverText.setPosition(sf::Vector2f(videoMode.width / 2.0f, videoMode.height / 2.0f - 70));
     bool gameOver = false;
 
     // Charger les textures des frames du héros
@@ -909,11 +911,18 @@ int interface() {
         while (window.pollEvent(event)) {
             if (event.type == sf::Event::Closed) {
                 window.close();
+            }        
+            if(showBarbareMagicien){
+                if (!music_menu.getStatus()) {
+                    music_menu.play();
+                }    
             }
             if (event.type == sf::Event::MouseButtonPressed) {
                 if (event.mouseButton.button == sf::Mouse::Left) {
                     sf::Vector2i mousePos = sf::Mouse::getPosition(window);
                     if (showBarbareMagicien) {
+                        
+
                         if (barbareButton.getGlobalBounds().contains(static_cast<sf::Vector2f>(mousePos))) {
                             joueur.setValeurAttaquePhysique(joueur.getValeurAttaquePhysique() + 15);
                             arme = make_shared<Arme>("Epee", 5, 0);
@@ -948,6 +957,10 @@ int interface() {
                         
                     }
                     if (!showBarbareMagicien && showHero) {
+                        music_menu.stop();
+                        if (!music_battle.getStatus()&&nombre_de_tours<4) {
+                            music_battle.play();
+                        }                        
                         for (size_t i = 0; i < attackButtons.size(); ++i) {
                             if (attackButtons[i].getGlobalBounds().contains(static_cast<sf::Vector2f>(mousePos))) {
                                 if (!attaques.empty()) {
@@ -967,12 +980,12 @@ int interface() {
                                             }
                                             mettreAJourInventaire(joueur, inventorySlots, inventorySlotTexts, attackButtons, attackButtonTexts, font);
                     
-                                        if (joueur.getPointsDeVie() <= 0){
-                                            showHero = false;
-                                            gameOver = true;
+
                                             
-                                        }
                                     }
+
+
+
                                     if (ennemi.getPointsDeVie() <= 0) {
                                         std::cout << "Vous avez vaincu l'ennemi!" << std::endl;
                                         if (nombre_de_tours < 4) {
@@ -1013,16 +1026,122 @@ int interface() {
                                             }
                                         }
                                         if (nombre_de_tours == 4) {
+                                            music_battle.stop();
+                                            if (!music_boss_battle.getStatus()) {
+                                                music_boss_battle.play();
+                                            }
                                             salleboss = true;
                                             showboss = true;
-                                            ennemi = Personnage("Malakar, l'Ombre Éternelle", 100, 155, 25, 20, 20);
+                                            ennemi = Personnage("Malakar, l'Ombre Éternelle", 170, 20, 20, 10, 10);
                                         }
+                                        std::string text;
+                                            if (joueur.getPointsDeVie() <= 0) {
+                                                music_boss_battle.stop();
+                                                if (!music_defaite.getStatus()) {
+                                                    music_defaite.play();
+                                                }    
+                                                
+                                                showHero = false;
+                                                gameOver = true;
+                                                if (!backgroundTexture.loadFromFile("image/pays_devaste.jpg")) {
+                                                    std::cerr << "Erreur : Impossible de charger l'image village.jpg !" << std::endl;
+                                                    return 1;
+                                                }
+                                                
+
+                                                text = u8"Le sol tremble sous vos pieds. Malakar, l'Ombre Eternelle, bien que blessé, se redresse lentement, un sourire sinistre aux lèvres. "
+                                                    "Son regard brûlant de malice transperce votre âme. Vous tentez une dernière attaque, mais votre corps ne répond plus. "
+                                                    "L'air est devenu trop lourd, l'obscurité trop oppressante. "
+                                                    "Un rire glacial résonne dans la salle du trône. \"Tu as été un adversaire valeureux, aventurier... mais ici, c'est MOI qui dicte la fin de cette histoire.\" "
+                                                    "Des ombres s'élèvent du sol, s'enroulant autour de vous comme des chaînes vivantes. Vous luttez, mais la force vous abandonne. "
+                                                    "Peu à peu, la lumière quitte vos yeux, votre essence absorbée par l'abîme sans fin de Malakar. "
+                                                    "Le monde extérieur ne sait rien de ce qui vient de se produire. Les villageois attendent, espérant voir leur héros revenir. Mais il ne reviendra jamais. "
+                                                    "La nuit s'étend, plus sombre et plus froide que jamais. Dans les jours qui suivent, les ténèbres s'abattent sur le royaume. "
+                                                    "Au sommet de son trône d'ombres, Malakar règne désormais sans opposition. "
+                                                    "L'ombre a triomphé.";
+                                            }
+                                            auto inventaire2 = joueur.getInventaire();
+                                            auto it2 = find_if(inventaire2.begin(), inventaire2.end(), [](const shared_ptr<Objet>& obj) {
+                                                return dynamic_pointer_cast<Potion>(obj) != nullptr;
+                                            });
+                                            if (joueur.getPointsDeVie() > 0 && it2 != inventaire2.end() && ennemi.getPointsDeVie() <= 0) {
+                                                music_boss_battle.stop();
+                                                if (!music_pouvoir.getStatus()) {
+                                                    music_pouvoir.play();
+                                                }    
+                                                showHero = false;
+                                                gameOver = true;
+                                                if (!backgroundTexture.loadFromFile("image/yeux.jpg")) {
+                                                    std::cerr << "Erreur : Impossible de charger l'image village.jpg !" << std::endl;
+                                                    return 1;
+                                                }
+                                                
+                                                text = u8"Le silence s’installe dans la salle du trône dévastée. Le corps de Malakar, l’Ombre Éternelle, s’effondre dans un tourbillon de ténèbres, ne laissant derrière lui qu’un écho lointain de son rire maudit."
+                                                "Vous tenez enfin entre vos mains la Pierre de Lumen, son éclat vacillant dans l’obscurité pesante du donjon."
+                                                "Mais alors que vous contemplez la Pierre de Lumen, une voix résonne dans votre esprit… une promesse de pouvoir, de domination."
+                                                "Pourquoi restaurer un monde faible, alors que vous pourriez le modeler à votre image ?"
+                                                "Dans un murmure, vous absorbez l’essence de la pierre. Une onde d’énergie obscure vous traverse, et vos yeux brillent d’un éclat surnaturel."
+                                                "Vous quittez le donjon, mais ce n’est pas la lumière que vous ramenez… c’est une nouvelle ère d’ombres qui commence."
+                                                "Désormais, c’est vous qui régnez sur la nuit...";
+                                            }
+                                            if (joueur.getPointsDeVie() > 0 && it2 == inventaire2.end() && ennemi.getPointsDeVie() <= 0) {
+                                                music_boss_battle.stop();
+                                                if (!music_sacrifice.getStatus()) {
+                                                    music_sacrifice.play();
+                                                }    
+                                                showHero = false;
+                                                gameOver = true;
+                                                if (!backgroundTexture.loadFromFile("image/bad_end.jpg")) {
+                                                    std::cerr << "Erreur : Impossible de charger l'image village.jpg !" << std::endl;
+                                                    return 1;
+                                                } 
+                                                
+                                                text = u8"Le silence s’installe dans la salle du trône dévastée. Le corps de Malakar, l’Ombre Éternelle, s’effondre dans un tourbillon de ténèbres, ne laissant derrière lui qu’un écho lointain de son rire maudit."
+                                                "Vous tenez enfin entre vos mains la Pierre de Lumen, son éclat vacillant dans l’obscurité pesante du donjon."
+                                                "Alors que vous vous apprêtez à quitter le donjon, vous sentez la noirceur de Malakar toujours présente…"
+                                                "Vous comprenez alors la vérité : la pierre ne peut être contenue, elle doit être détruite."
+                                                "Dans un dernier acte de courage, vous brisez la Pierre de Lumen entre vos mains. Une explosion de lumière consume tout, purifiant le mal… mais aussi vous-même."
+                                                "Lorsque les villageois s’approchent du donjon, ils ne trouvent que des ruines baignées d’un éclat lunaire. Votre nom ne sera peut-être jamais chanté, mais le monde, lui, est sauvé.";
+                                            }
+                                            if( gameOver){
+                                                gameOverBackground.setTexture(backgroundTexture);
+                                                gameOverBackground.setScale(
+                                                    static_cast<float>(videoMode.width) / backgroundTexture.getSize().x,
+                                                    static_cast<float>(videoMode.height) / backgroundTexture.getSize().y
+                                                );
+                                                float maxTextWidth = videoMode.width / 3.0f;
+                                                gameOverText.setLineSpacing(1.5f);
+                                            
+                                                std::string wrappedText;
+                                                std::istringstream words(text);
+                                                std::string word;
+                                                float currentLineWidth = 0.0f;
+                                                while (words >> word) {
+                                                    sf::Text tempText(word, font, characterSize);
+                                                    float wordWidth = tempText.getLocalBounds().width;
+                                                    if (currentLineWidth + wordWidth > maxTextWidth) {
+                                                        wrappedText += "\n";
+                                                        currentLineWidth = 0.0f;
+                                                    }
+                                                    wrappedText += word + " ";
+                                                    currentLineWidth += wordWidth + tempText.getLetterSpacing();
+                                                }
+                                            
+                                                sf::String texteSfml = sf::String::fromUtf8(wrappedText.begin(), wrappedText.end());
+                                                gameOverText.setFont(font);
+                                                gameOverText.setString(texteSfml);
+                                                gameOverText.setCharacterSize(characterSize);
+                                                gameOverText.setFillColor(sf::Color::White);
+                                            
+                                                sf::FloatRect textRect = gameOverText.getLocalBounds();
+                                                gameOverText.setOrigin(textRect.left + textRect.width / 2.0f, textRect.top + textRect.height / 2.0f);
+                                                gameOverText.setPosition(sf::Vector2f(videoMode.width / 2.0f, videoMode.height / 2.0f +20));
+                                            }
                                         nombre_de_tours++;
                                     }
                                         
                                     mettreAJourInventaire(joueur, inventorySlots, inventorySlotTexts, attackButtons, attackButtonTexts, font);
-                                    std::cout << "Bouton touché" << std::endl;
-                                    break;
+
                                 }
                             }
                         }
@@ -1069,6 +1188,7 @@ int interface() {
             window.draw(quitButton);
             window.draw(quitButtonText);
         } else if (!showBarbareMagicien) {
+
 
             if (!salleboss) {
                 window.draw(backgroundSpritegrotte);
