@@ -178,42 +178,13 @@ public:
     void rencontrerObjet(shared_ptr<Objet> objet);
     void sauvegarder(const string& fichier);
     void charger(const string& fichier);
+    void clearInventaire() {
+        inventaire.clear();
+    }
 
 private:
     vector<Attaque> getAttaquesDisponibles() const;
 };
-
-// Implémentation des méthodes de sauvegarde et de chargement
-void Joueur::sauvegarder(const string& fichier) {
-    ofstream out(fichier);
-    if (!out) {
-        cerr << "Erreur : Impossible de sauvegarder le joueur." << endl;
-        return;
-    }
-    out << nom << " " << pointsDeVie << " " << valeurAttaquePhysique << " " << valeurAttaqueMagique << " "
-        << defensePhysique << " " << defenseMagique << endl;
-    for (const auto& objet : inventaire) {
-        out << objet->nom << endl;
-    }
-}
-
-void Joueur::charger(const string& fichier) {
-    ifstream in(fichier);
-    if (!in) {
-        cerr << "Erreur : Impossible de charger le joueur." << endl;
-        return;
-    }
-    in >> nom >> pointsDeVie >> valeurAttaquePhysique >> valeurAttaqueMagique >> defensePhysique >> defenseMagique;
-    inventaire.clear();
-    string nomObjet;
-    while (in >> nomObjet) {
-        if (nomObjet == "Potion") {
-            inventaire.push_back(make_shared<Potion>());
-        } else {
-            cerr << "Erreur : Objet inconnu lors du chargement." << endl;
-        }
-    }
-}
 
 // Implémentation des méthodes
 
@@ -537,11 +508,11 @@ std::vector<sf::Texture> chargerTexturesMechant(const std::string& cheminDossier
 }
 
 // Fonction pour afficher et animer un méchant
-void afficherMechant(sf::RenderWindow& window, std::vector<std::vector<sf::Texture>>& mechantsTextures, sf::Vector2f position, float frameTime, int& frameIndex, int& mechantActuel, sf::Clock& clock) {
+int afficherMechant(sf::RenderWindow& window, std::vector<std::vector<sf::Texture>>& mechantsTextures, sf::Vector2f position, float frameTime, int& frameIndex, int& mechantActuel, sf::Clock& clock) {
     // Vérifier que mechantActuel est dans les limites
     if (mechantActuel < 0 || mechantActuel >= static_cast<int>(mechantsTextures.size())) {
         cerr << "Erreur : mechantActuel hors limites." << endl;
-        return;
+        return -1;
     }
 
     // Animer le méchant actuel
@@ -570,10 +541,12 @@ void afficherMechant(sf::RenderWindow& window, std::vector<std::vector<sf::Textu
     mechantSprite.setTexture(mechantsTextures[mechantActuel][frameIndex]);
     mechantSprite.setPosition(adjustedPosition);
     window.draw(mechantSprite);
+    return 0;
 }
 
 
 int interface() {
+
     sf::Music music_battle;
 
     // Charger un fichier audio au format OGG
@@ -622,6 +595,7 @@ int interface() {
         return -1;
     }
 
+
     sf::VideoMode videoMode(1920, 1080);
     sf::RenderWindow window(videoMode, "Introduction");
     window.setPosition(sf::Vector2i(0, 0));
@@ -631,6 +605,7 @@ int interface() {
         std::cerr << "Erreur : Impossible de charger l'image !" << std::endl;
         return 1;
     }
+
     window.setVerticalSyncEnabled(true);
 
     sf::Sprite backgroundSprite;
@@ -960,7 +935,7 @@ int interface() {
                         music_menu.stop();
                         if (!music_battle.getStatus()&&nombre_de_tours<4) {
                             music_battle.play();
-                        }                        
+                        }                     
                         for (size_t i = 0; i < attackButtons.size(); ++i) {
                             if (attackButtons[i].getGlobalBounds().contains(static_cast<sf::Vector2f>(mousePos))) {
                                 if (!attaques.empty()) {
@@ -1088,7 +1063,7 @@ int interface() {
                                                 music_boss_battle.stop();
                                                 if (!music_sacrifice.getStatus()) {
                                                     music_sacrifice.play();
-                                                }    
+                                                }      
                                                 showHero = false;
                                                 gameOver = true;
                                                 if (!backgroundTexture.loadFromFile("image/bad_end.jpg")) {
@@ -1213,7 +1188,9 @@ int interface() {
             if (showHero) {
                 window.draw(heroSprite);
                 if (!salleboss) {
-                    afficherMechant(window, mechantsTextures, sf::Vector2f(1500, 500), frametimemechant, frameIndexmechant, quelle_monstre, clock);
+                    while (afficherMechant(window, mechantsTextures, sf::Vector2f(1500, 500), frametimemechant, frameIndexmechant, quelle_monstre, clock) == -1) { // probleme de chargement d'une des textures recharge tant que probleme
+                        quelle_monstre = rand() % mechantsTextures.size();
+                    }
                 }
                 // Draw health bar above the hero sprite
                 healthBar.setSize(sf::Vector2f(2 * joueur.getPointsDeVie(), 20)); // Update health bar size
@@ -1244,24 +1221,126 @@ int interface() {
 }
 
 
+void sauvegarderEtatJeu(int numeroTour, const Joueur& joueur, const string& fichier) {
+    ofstream out(fichier, ios::out | ios::trunc);
+    if (!out) {
+        cerr << "Erreur : Impossible de sauvegarder l'état du jeu." << endl;
+        return;
+    }
+    out << "Tour: " << numeroTour << endl;
+    out << "Points de vie: " << joueur.getPointsDeVie() << endl;
+    out << "Attaque Physique: " << joueur.getValeurAttaquePhysique() << endl;
+    out << "Attaque Magique: " << joueur.getValeurAttaqueMagique() << endl;
+    out << "Défense Physique: " << joueur.getDefensePhysique() << endl;
+    out << "Défense Magique: " << joueur.getDefenseMagique() << endl;
+    out << "Inventaire:" << endl;
+    for (const auto& objet : joueur.getInventaire()) {
+        out << "- " << objet->nom;
+        if (auto arme = dynamic_pointer_cast<Arme>(objet)) {
+            out << " (Arme) " << arme->bonusAttaquePhysique << " " << arme->bonusAttaqueMagique;
+        } else if (auto armure = dynamic_pointer_cast<Armure>(objet)) {
+            out << " (Armure) " << armure->bonusDefensePhysique << " " << armure->bonusDefenseMagique;
+        } else if (auto attaqueObjet = dynamic_pointer_cast<AttaqueObjet>(objet)) {
+            out << " (Attaque) " << attaqueObjet->attaque.degatPhysique << " " << attaqueObjet->attaque.degatMagique;
+        } else if (dynamic_pointer_cast<Potion>(objet)) {
+            out << " (Potion)";
+        }
+        out << endl;
+    }
+}
 
+int chargerEtatJeu(Joueur& joueur, vector<Attaque>& attaques) {
+    ifstream in("sauvegarde.txt", ios::in);
+    if (!in) {
+        cerr << "Erreur : Impossible de charger l'état du jeu." << endl;
+        return 1;
+    }
+    string ligne;
+    int numeroTour = 0;
+    while (getline(in, ligne)) {
+        istringstream iss(ligne);
 
+        if (ligne.find("Tour:") == 0) {
+            iss.ignore(5); // Ignore "Tour: "
+            iss >> numeroTour;
+        } else if (ligne.find("Points de vie:") == 0) {
+            iss.ignore(14);
+            int pointsDeVie;
+            if (iss >> pointsDeVie) {
+                joueur.setPointsDeVie(pointsDeVie);
+            }
+        } else if (ligne.find("Attaque Physique:") == 0) {
+            iss.ignore(18);
+            int attaquePhysique;
+            if (iss >> attaquePhysique) {
+                joueur.setValeurAttaquePhysique(attaquePhysique);
+            }
+        } else if (ligne.find("Attaque Magique:") == 0) {
+            iss.ignore(17);
+            int attaqueMagique;
+            if (iss >> attaqueMagique) {
+                joueur.setValeurAttaqueMagique(attaqueMagique);
+            }
+        } else if (ligne.find("Défense Physique:") == 0) {
+            iss.ignore(18);
+            int defensePhysique;
+            if (iss >> defensePhysique) {
+                joueur.setDefensePhysique(defensePhysique);
+            }
+        } else if (ligne.find("Défense Magique:") == 0) {
+            iss.ignore(17);
+            int defenseMagique;
+            if (iss >> defenseMagique) {
+                joueur.setDefenseMagique(defenseMagique);
+            }
+        } else if (ligne.find("Inventaire:") == 0) {
+            joueur.clearInventaire();
+        }else if (ligne.find("- ") == 0) {  // Objet d'inventaire
+            string objet = ligne.substr(2); // Retirer "- "
+            if (objet.find("Arme") != string::npos) {
+                // Arme
+                string nomArme = objet.substr(0, objet.find(" (Arme)"));
+                size_t pos = objet.find(" (Arme) ") + 8; // Position after " (Arme) "
+                int bonusAttaquePhysique = stoi(objet.substr(pos, objet.find(' ', pos) - pos));
+                pos = objet.find(' ', pos) + 1;
+                int bonusAttaqueMagique = stoi(objet.substr(pos));
+                cout<<objet << " Arme: " << nomArme << " " << bonusAttaquePhysique << " " << bonusAttaqueMagique << endl;
+                auto arme = make_shared<Arme>(nomArme, bonusAttaquePhysique, bonusAttaqueMagique);
+                joueur.ajouterObjet(arme);
+                joueur.equiperArme(arme);
+            } else if (objet.find("Armure") != string::npos) {
+                // Armure
+                string nomArmure = objet.substr(0, objet.find(" (Armure)"));
+                size_t pos = objet.find(" (Armure) ") + 10; // Position after " (Armure) "
+                int bonusDefensePhysique = stoi(objet.substr(pos, objet.find(' ', pos) - pos));
+                pos = objet.find(' ', pos) + 1;
+                int bonusDefenseMagique = stoi(objet.substr(pos));
+                cout<<objet << " Armure: " << nomArmure << " " << bonusDefensePhysique << " " << bonusDefenseMagique << endl;
+                auto armure = make_shared<Armure>(nomArmure, bonusDefensePhysique, bonusDefenseMagique);
+                joueur.ajouterObjet(armure);
+                joueur.equiperArmure(armure);
 
+            } else if (objet.find("Attaque") != string::npos) {
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+                string nomAttaque = objet.substr(0, objet.find(" (Attaque)"));
+                size_t pos = objet.find(" (Attaque) ") + 11; // Position after " (Attaque) "
+                int degatPhysique = stoi(objet.substr(pos, objet.find(' ', pos) - pos));
+                pos = objet.find(' ', pos) + 1;
+                int degatMagique = stoi(objet.substr(pos));
+                cout<<objet << " Attaque: " << nomAttaque << " " << degatPhysique << " " << degatMagique << endl;
+                auto attaque = Attaque(nomAttaque, degatPhysique, degatMagique);
+                attaques.push_back(attaque);
+                auto attaqueObjet = make_shared<AttaqueObjet>(attaque);
+                joueur.ajouterObjet(attaqueObjet);
+            } else if (objet.find("Potion") != string::npos) {
+                // Potion
+                auto potion = make_shared<Potion>();
+                joueur.ajouterObjet(potion);
+            }
+        }
+    }
+    return numeroTour;
+}
 
 int main() {
     int choixInterface;
@@ -1349,9 +1428,22 @@ int main() {
                 }
                 cout << endl;
             }
+
+            cout<<"Voulez vous sauvegarder la partie ? (0: Oui), Charger la dernière partie sauvegardée ? (1: Oui), Continuer à jouer ? (2: Oui)"<<endl;
+            int choix_sauvegarde;
+            cin>>choix_sauvegarde;
+            if(choix_sauvegarde == 0){
+                sauvegarderEtatJeu(nombre_de_tours, joueur, "sauvegarde.txt");
+                cout<<"Partie sauvegardée"<<endl;
+            }
+            if(choix_sauvegarde == 1){
+                nombre_de_tours = chargerEtatJeu(joueur, attaques);
+
+                cout<<"Partie chargée"<<endl;
+            }
             Personnage ennemi("Ennemi", 50, 8, 8, 3, 3);
 
-            joueur.rencontrerEnnemi(ennemi, attaques,nomAleatoiree);
+            joueur.rencontrerEnnemi(ennemi, attaques, nomAleatoiree);
             if (joueur.getPointsDeVie() == 0) {
                 break;
             }

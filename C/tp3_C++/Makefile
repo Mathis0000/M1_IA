@@ -1,4 +1,5 @@
 # ++ sfml
+
 #https://www.youtube.com/watch?v=up5agOJNzAQ&list=PLEw78AoQh6uIvhDAw86194imjBIUPytr5&index=138
 #https://www.youtube.com/watch?v=1raaJ74U3SI&list=PLEw78AoQh6uIvhDAw86194imjBIUPytr5&index=197
 #https://www.youtube.com/watch?v=BgkJRLtu84o&list=PLEw78AoQh6uIvhDAw86194imjBIUPytr5&index=59
@@ -12,11 +13,11 @@ TARGET = programme
 SOURCES = main.cpp
 
 # Liste des dépendances (ajoutez vos fichiers d'entête ici)
-HEADERS = interface.hpp 
+HEADERS = interface.hpp
 
 # Compilateur et flags
 CXX = g++
-CXXFLAGS = -Wall -Wextra -O2 -g 
+CXXFLAGS = -Wall -Wextra -O2 
 
 # Objets générés automatiquement à partir des fichiers sources
 OBJECTS = $(SOURCES:.cpp=.o)
@@ -26,10 +27,9 @@ all: $(TARGET)
 
 # Règle pour créer l'exécutable
 $(TARGET): $(OBJECTS)
-	$(CXX) $(OBJECTS) -o $(TARGET) -lsfml-graphics -lsfml-window -lsfml-system -lsfml-audio
-
+	$(CXX) $(OBJECTS) -o $(TARGET) -L/usr/lib -lsfml-graphics -lsfml-window -lsfml-system -lsfml-audio
 # Règle générique pour compiler les fichiers .cpp en .o
-%.o: %.cpp
+%.o: %.cpp $(HEADERS)
 	$(CXX) $(CXXFLAGS) -c $< -o $@
 
 # Nettoyage des fichiers générés
