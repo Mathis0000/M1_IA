@@ -1,11 +1,10 @@
-Tour: 2
-Points de vie: 51
-Attaque Physique: 19
-Attaque Magique: 31
-Défense Physique: 0
-Défense Magique: 20
+Tour: 5
+Points de vie: 95
+Attaque Physique: 15
+Attaque Magique: 40
+Défense Physique: 7
+Défense Magique: 25
 Inventaire:
 - Explosion Solaire (Attaque) 25 5
-- Potion (Potion)
-- Baton des Ames Perdues (Arme) 7 3
-- Armure Runique de l Eclipse (Armure) 0 10
+- Courroux d Asmodee (Arme) 5 5
+- Exosquelette du Neant (Armure) 5 5

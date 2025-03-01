@@ -9,15 +9,30 @@
 # Nom de l'exécutable final
 TARGET = programme
 
-# Liste des fichiers sources (ajoutez vos fichiers ici)
-SOURCES = main.cpp
+# Liste des fichiers sources
+SOURCES = main.cpp \
+          Objet.cpp \
+          Potion.cpp \
+          Arme.cpp \
+          Armure.cpp \
+          Attaque.cpp \
+          AttaqueObjet.cpp \
+          Personnage.cpp \
+          Joueur.cpp
 
-# Liste des dépendances (ajoutez vos fichiers d'entête ici)
-HEADERS = interface.hpp
+# Liste des fichiers d'en-tête
+HEADERS = Objet.h \
+          Potion.h \
+          Arme.h \
+          Armure.h \
+          Attaque.h \
+          AttaqueObjet.h \
+          Personnage.h \
+          Joueur.h
 
 # Compilateur et flags
 CXX = g++
-CXXFLAGS = -Wall -Wextra -O2 
+CXXFLAGS = -Wall -Wextra -O2
 
 # Objets générés automatiquement à partir des fichiers sources
 OBJECTS = $(SOURCES:.cpp=.o)
@@ -28,6 +43,7 @@ all: $(TARGET)
 # Règle pour créer l'exécutable
 $(TARGET): $(OBJECTS)
 	$(CXX) $(OBJECTS) -o $(TARGET) -L/usr/lib -lsfml-graphics -lsfml-window -lsfml-system -lsfml-audio
+
 # Règle générique pour compiler les fichiers .cpp en .o
 %.o: %.cpp $(HEADERS)
 	$(CXX) $(CXXFLAGS) -c $< -o $@
