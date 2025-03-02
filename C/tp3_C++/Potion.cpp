@@ -5,6 +5,13 @@
 
 Potion::Potion() : Objet("Potion") {}
 
+/**
+ * @brief Utilizes the potion on the given character.
+ *
+ * This function restores the character's health points to 100 and removes the potion from the character's inventory.
+ *
+ * @param personnage The character on whom the potion is used.
+ */
 void Potion::utiliser(Personnage& personnage) {
     personnage.setPointsDeVie(100);
     std::cout << "Vous avez utilisé une potion et récupéré tous vos PV." << std::endl;

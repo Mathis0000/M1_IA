@@ -1,10 +1,11 @@
-Tour: 5
-Points de vie: 95
-Attaque Physique: 15
-Attaque Magique: 40
-Défense Physique: 7
-Défense Magique: 25
+Tour: 0
+Points de vie: 100
+Attaque Physique: 30
+Attaque Magique: 10
+Défense Physique: 10
+Défense Magique: 5
 Inventaire:
-- Explosion Solaire (Attaque) 25 5
-- Courroux d Asmodee (Arme) 5 5
-- Exosquelette du Neant (Armure) 5 5
+- Eclair Fugace (Attaque) 9 16
+- Armure de l'apprenti soldat (Armure) 5 0
+- Épée (Arme) 5 0
+- Potion (Potion)

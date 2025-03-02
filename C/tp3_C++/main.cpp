@@ -24,7 +24,21 @@
 
 using namespace std;
 
-//partie interface graphique
+/**
+ * @brief Updates the player's inventory and attack buttons.
+ * 
+ * This function updates the texts of the inventory slots and attack buttons
+ * based on the items present in the player's inventory. It first clears the
+ * existing attack buttons and texts, then iterates through the player's inventory
+ * to update the displayed information.
+ * 
+ * @param joueur Reference to the Joueur object whose inventory needs to be updated.
+ * @param inventorySlots Vector of sf::RectangleShape representing the inventory slots.
+ * @param inventorySlotTexts Vector of sf::Text representing the texts of the inventory slots.
+ * @param attackButtons Vector of sf::RectangleShape representing the attack buttons.
+ * @param attackButtonTexts Vector of sf::Text representing the texts of the attack buttons.
+ * @param font Reference to the font used for the texts.
+ */
 void mettreAJourInventaire(Joueur& joueur, vector<sf::RectangleShape>& inventorySlots, vector<sf::Text>& inventorySlotTexts, vector<sf::RectangleShape>& attackButtons, vector<sf::Text>& attackButtonTexts, sf::Font& font) {
     attackButtons.clear();
     attackButtonTexts.clear();
@@ -62,6 +76,17 @@ void mettreAJourInventaire(Joueur& joueur, vector<sf::RectangleShape>& inventory
     }
 }
 
+/**
+ * @brief Loads a series of textures from a specified folder.
+ *
+ * This function loads a specified number of textures from a given folder.
+ * If the specified size is 1, the textures are resized by a factor of 3.
+ *
+ * @param cheminDossier The path to the folder containing the texture files.
+ * @param nombreTextures The number of textures to load.
+ * @param taille The size of the textures. If taille is 1, the textures will be resized by a factor of 3.
+ * @return A vector containing the loaded textures.
+ */
 std::vector<sf::Texture> chargerTexturesMechant(const std::string& cheminDossier, int nombreTextures, int taille) {
     std::vector<sf::Texture> textures;
     for (int i = 0; i < nombreTextures; ++i) {
@@ -91,7 +116,23 @@ std::vector<sf::Texture> chargerTexturesMechant(const std::string& cheminDossier
     return textures;
 }
 
-// Fonction pour afficher et animer un méchant
+/**
+ * @brief Displays and animates a monster in the render window.
+ * 
+ * This function handles the animation and display of a monster at a given position
+ * in the SFML render window. It checks the texture index limits and adjusts the
+ * monster's position based on its type.
+ * 
+ * @param window The SFML render window.
+ * @param mechantsTextures A vector of vectors of textures representing the different
+ *        animations of the monsters.
+ * @param position The position where the monster should be displayed.
+ * @param frameTime The time between each frame of the animation.
+ * @param frameIndex The current frame index of the animation.
+ * @param mechantActuel The index of the current monster to display.
+ * @param clock An SFML clock to manage the animation timing.
+ * @return int Returns 0 if the display was successful, -1 if mechantActuel is out of bounds.
+ */
 int afficherMechant(sf::RenderWindow& window, std::vector<std::vector<sf::Texture>>& mechantsTextures, sf::Vector2f position, float frameTime, int& frameIndex, int& mechantActuel, sf::Clock& clock) {
     // Vérifier que mechantActuel est dans les limites
     if (mechantActuel < 0 || mechantActuel >= static_cast<int>(mechantsTextures.size())) {
@@ -129,6 +170,15 @@ int afficherMechant(sf::RenderWindow& window, std::vector<std::vector<sf::Textur
 }
 
 
+/**
+ * @brief Main interface function for the game.
+ * 
+ * This function initializes and manages the main game interface, including loading audio files, textures, and fonts.
+ * It sets up the game window, background, and various UI elements such as buttons and text.
+ * The function also handles the game loop, including event processing, animations, and game state updates.
+ * 
+ * @return int Returns 0 on successful execution, -1 on audio file loading errors, and 1 on image or font loading errors.
+ */
 int interface() {
 
     sf::Music music_battle;
@@ -591,7 +641,7 @@ int interface() {
                                             }
                                             salleboss = true;
                                             showboss = true;
-                                            ennemi = Personnage("Malakar, l'Ombre Éternelle", 170, 20, 20, 10, 10);
+                                            ennemi = Personnage("Malakar, l'Ombre Éternelle", 200, 20, 20, 10, 10);
                                         }
                                         std::string text;
                                             if (joueur.getPointsDeVie() <= 0) {
@@ -805,6 +855,16 @@ int interface() {
 }
 
 
+/**
+ * @brief Saves the current game state to a file.
+ * 
+ * This function writes the current game state, including the turn number, player's health points,
+ * attack and defense values, as well as the player's inventory, to a specified file.
+ * 
+ * @param numeroTour The current turn number of the game.
+ * @param joueur A constant reference to the Joueur object whose state needs to be saved.
+ * @param fichier The path of the file where the game state should be saved.
+ */
 void sauvegarderEtatJeu(int numeroTour, const Joueur& joueur, const string& fichier) {
     ofstream out(fichier, ios::out | ios::trunc);
     if (!out) {
@@ -833,6 +893,18 @@ void sauvegarderEtatJeu(int numeroTour, const Joueur& joueur, const string& fich
     }
 }
 
+/**
+ * @brief Loads the game state from a save file.
+ * 
+ * This function reads the player's information and available attacks
+ * from a save file named "sauvegarde.txt". It updates the player's attributes
+ * and attacks accordingly.
+ * 
+ * @param joueur Reference to the Joueur object to be updated.
+ * @param attaques Reference to a vector of Attaque objects to be filled.
+ * @return int The turn number read from the save file.
+ *         Returns 1 if there is an error reading the file.
+ */
 int chargerEtatJeu(Joueur& joueur, vector<Attaque>& attaques) {
     ifstream in("sauvegarde.txt", ios::in);
     if (!in) {
@@ -932,7 +1004,24 @@ int main() {
     cout << "Choisissez votre interface :" << endl;
     cout << "1. Interface Graphique" << endl;
     cout << "2. Interface Console" << endl;
-    cin >> choixInterface;
+    while (true) {
+        std::cin >> choixInterface;
+
+        // Vérifie si l'entrée est un entier valide
+        if (std::cin.fail()) {
+            // Effacer l'état d'erreur de cin
+            std::cin.clear();
+            // Ignorer l'entrée incorrecte
+            std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
+            std::cout << "Entrée invalide. Veuillez entrer 1 ou 2." << std::endl;
+        } else if (choixInterface == 1) {
+            break;
+        } else if (choixInterface == 2) {
+            break;
+        } else {
+            std::cout << "Choix invalide. Veuillez entrer 1 ou 2." << std::endl;
+        }
+    }
     if (choixInterface == 1) {
         interface();
     } else {
@@ -952,8 +1041,24 @@ int main() {
         cout << "Choisissez votre classe :" << endl;
         cout << "1. Barbare (dégâts physiques accrus)" << endl;
         cout << "2. Magicien (dégâts magiques accrus)" << endl;
-        cin >> choixClasse;
-
+        while (true) {
+            std::cin >> choixClasse;
+    
+            // Vérifie si l'entrée est un entier valide
+            if (std::cin.fail()) {
+                // Effacer l'état d'erreur de cin
+                std::cin.clear();
+                // Ignorer l'entrée incorrecte
+                std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
+                std::cout << "Entrée invalide. Veuillez entrer 1 ou 2." << std::endl;
+            } else if (choixClasse == 1) {
+                break;
+            } else if (choixClasse == 2) {
+                break;
+            } else {
+                std::cout << "Choix invalide. Veuillez entrer 1 ou 2." << std::endl;
+            }
+        }
         Joueur joueur("Joueur", 100, 10, 10, 5, 5);
 
         // Ajouter une attaque aléatoire à l'inventaire du joueur
@@ -975,11 +1080,6 @@ int main() {
             joueur.setValeurAttaqueMagique(joueur.getValeurAttaqueMagique() + 15);
             arme = make_shared<Arme>("Bâton magique", 0, 5);
             armure = make_shared<Armure>("Armure de l'apprenti magicien", 0, 5);
-        } else {
-            cout << "Choix invalide! Barbare choisi par défaut." << endl;
-            joueur.setValeurAttaquePhysique(joueur.getValeurAttaquePhysique() + 15);
-            arme = make_shared<Arme>("Épée", 5, 0);
-            armure = make_shared<Armure>("Armure de l'apprenti soldat", 5, 0);
         }
 
         // Équiper l'arme et l'armure
@@ -1017,8 +1117,28 @@ int main() {
 
             cout<<"Voulez vous sauvegarder la partie ? (0: Oui), Charger la dernière partie sauvegardée ? (1: Oui), Continuer à jouer ? (2: Oui)"<<endl;
             int choix_sauvegarde;
-            cin>>choix_sauvegarde;
-            if(choix_sauvegarde == 0){
+
+        while (true) {
+            std::cin >> choix_sauvegarde;
+    
+            // Vérifie si l'entrée est un entier valide
+            if (std::cin.fail()) {
+                // Effacer l'état d'erreur de cin
+                std::cin.clear();
+                // Ignorer l'entrée incorrecte
+                std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
+                std::cout << "Entrée invalide. Veuillez entrer 0 ou 1 ou 2." << std::endl;
+            } else if (choix_sauvegarde == 1) {
+                break;
+            } else if (choix_sauvegarde == 2) {
+                break;
+            }
+            else if (choix_sauvegarde == 0) {
+                break;
+            } else {
+                std::cout << "Choix invalide. Veuillez entrer 1 ou 2." << std::endl;
+            }
+        }            if(choix_sauvegarde == 0){
                 sauvegarderEtatJeu(nombre_de_tours, joueur, "sauvegarde.txt");
                 cout<<"Partie sauvegardée"<<endl;
             }
@@ -1034,7 +1154,7 @@ int main() {
                 break;
             }
             cout<<endl;
-            int chance = rand() % 4;
+            int chance = rand() % 5;
             if (chance == 0) {
                 // Ajouter une nouvelle attaque au hasard suite au combat contre le monstre
                 if (!attaques.empty()) {
@@ -1166,14 +1286,27 @@ int main() {
                     joueur.ajouterObjet(potion);            
                 }
             }
-            else {
+            else if (chance == 4) {
                 // Le joueur rencontre un ami qui lui donne un objet au choix
                 cout << "Vous rencontrez un ami sur le chemin. Il vous propose de choisir un objet :" << endl;
                 cout << "1. Une arme" << endl;
                 cout << "2. Une armure" << endl;
                 cout << "3. Une potion" << endl;
                 int choix;
-                cin >> choix;
+                while (true) {
+                    std::cin >> choix;
+            
+                    // Vérifie si l'entrée est un entier valide
+                    if (std::cin.fail()) {
+                        // Effacer l'état d'erreur de cin
+                        std::cin.clear();
+                        // Ignorer l'entrée incorrecte
+                        std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
+                        std::cout << "Entrée invalide. Veuillez entrer un int." << std::endl;
+                    } else {
+                        break;
+                    }
+                }
 
                 shared_ptr<Objet> nouvelObjet;
                 if (choix == 1) {
@@ -1228,19 +1361,18 @@ int main() {
                             joueur.equiperArmure(armureAleatoire);
                             cout << "Vous avez équipé l'armure: " << armureAleatoire->nom << endl;
                         }
-                } else if (choix == 3) {
+                    }
+                }
+                else if (choix == 3) {
                     cout << "Votre ami vous donne une potion." << endl;
                     joueur.ajouterObjet(potion);
-                } else {
+                } else if (choix != 1 && choix != 2 && choix != 3) {
                     cout << "Choix invalide! Vous ne recevez aucun objet." << endl;
                 }
 
-                if (nouvelObjet) {
-                    joueur.ajouterObjet(nouvelObjet);
-                    cout << "Votre ami vous a donné: " << nouvelObjet->nom << endl;
-                }
+
+                
             }
-        }
             this_thread::sleep_for(chrono::seconds(5));
             std::cout << std::string(100, '\n'); // Affiche 100 sauts de ligne
             nombre_de_tours++;
